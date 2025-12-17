@@ -65,106 +65,176 @@ std::vector<float> RL::ComputeObservation()
 {
     std::vector<std::vector<float>> obs_list;
 
-    for (const std::string &observation : this->params.Get<std::vector<std::string>>("observations"))
+    // for (const std::string &observation : this->meta_data->observation_names)
+    // {
+    //     // ============= Base Observations =============
+    //     if (observation == "lin_vel")
+    //     {
+    //         obs_list.push_back(this->obs.lin_vel * this->meta_data->obs_scale);
+    //     }
+    //     else if (observation == "ang_vel")
+    //     {
+    //         // In ROS1 Gazebo, the coordinate system for angular velocity is in the world coordinate system.
+    //         // In ROS2 Gazebo, mujoco and real robot, the coordinate system for angular velocity is in the body coordinate system.
+    //         if (this->ang_vel_axis == "body")
+    //         {
+    //             obs_list.push_back(this->obs.ang_vel * this->meta_data->obs_scale);
+    //         }
+    //         else if (this->ang_vel_axis == "world")
+    //         {
+    //             obs_list.push_back(QuatRotateInverse(this->obs.base_quat, this->obs.ang_vel) * this->meta_data->obs_scale);
+    //         }
+    //     }
+    //     else if (observation == "gravity_vec")
+    //     {
+    //         obs_list.push_back(QuatRotateInverse(this->obs.base_quat, this->obs.gravity_vec));
+    //     }
+    //     else if (observation == "commands")
+    //     {
+    //         obs_list.push_back(this->obs.commands * this->meta_data->obs_scale);
+    //     }
+    //     else if (observation == "dof_pos")
+    //     {
+    //         std::vector<float> dof_pos_rel = this->obs.dof_pos - this->meta_data->default_joint_pos;
+    //         for (int i : this->params.Get<std::vector<int>>("wheel_indices"))
+    //         {
+    //             dof_pos_rel[i] = 0.0f;
+    //         }
+    //         obs_list.push_back(dof_pos_rel * this->meta_data->obs_scale);
+    //     }
+    //     else if (observation == "dof_vel")
+    //     {
+    //         obs_list.push_back(this->obs.dof_vel * this->meta_data->obs_scale);
+    //     }
+    //     else if (observation == "actions")
+    //     {
+    //         obs_list.push_back(this->obs.actions);
+    //     }
+    //     // ============= Other Observations =============
+    //     else if (observation == "whole_body_tracking/motion_command")
+    //     {
+    //         std::vector<float> motion_cmd;
+    //         if (this->motion_loader)
+    //         {
+    //             auto joint_pos_sdk = this->motion_loader->GetJointPos();
+    //             auto joint_vel_sdk = this->motion_loader->GetJointVel();
+    //             auto joint_mapping = this->params.Get<std::vector<int>>("joint_mapping");
+    //             std::vector<float> joint_pos_training(joint_mapping.size());
+    //             std::vector<float> joint_vel_training(joint_mapping.size());
+    //             for (size_t i = 0; i < joint_mapping.size(); ++i)
+    //             {
+    //                 joint_pos_training[i] = joint_pos_sdk[joint_mapping[i]];
+    //                 joint_vel_training[i] = joint_vel_sdk[joint_mapping[i]];
+    //             }
+    //             motion_cmd.insert(motion_cmd.end(), joint_pos_training.begin(), joint_pos_training.end());
+    //             motion_cmd.insert(motion_cmd.end(), joint_vel_training.begin(), joint_vel_training.end());
+    //         }
+    //         else
+    //         {
+    //             motion_cmd.resize(this->meta_data->num_joints * 2, 0.0f);
+    //         }
+    //         obs_list.push_back(motion_cmd);
+    //     }
+    //     else if (observation == "whole_body_tracking/motion_anchor_ori_b")
+    //     {
+    //         std::vector<float> anchor_ori(6, 0.0f);
+    //         if (this->motion_loader)
+    //         {
+    //             std::vector<float> robot_anchor_quat_w = this->obs.base_quat;
+    //             std::vector<float> ref_anchor_quat_w = this->motion_loader->GetAnchorQuat();
+    //             std::vector<float> init_quat = this->motion_loader->GetInitQuat();
+    //             std::vector<float> motion_anchor_quat_w = QuaternionMultiply(init_quat, ref_anchor_quat_w);
+    //             std::vector<float> robot_quat_inv = QuaternionConjugate(robot_anchor_quat_w);
+    //             std::vector<float> relative_quat = QuaternionMultiply(robot_quat_inv, motion_anchor_quat_w);
+    //             std::vector<float> rot_matrix = QuaternionToRotationMatrix(relative_quat);
+    //             anchor_ori = MatrixFirstTwoColumns(rot_matrix);
+    //         }
+    //         obs_list.push_back(anchor_ori);
+    //     }
+    //     else if (observation == "RoboMimic_Deploy/phase")
+    //     {
+    //         float motion_time = this->episode_length_buf * this->params.Get<float>("dt") * this->params.Get<int>("decimation");
+    //         float count = motion_time;
+    //         float phase = count / this->motion_length;
+    //         std::vector<float> phase_vec = {phase};
+    //         obs_list.push_back(phase_vec);
+    //     }
+    // }
+
+    for (const std::string &observation : this->meta_data->observation_names)
     {
         // ============= Base Observations =============
-        if (observation == "lin_vel")
+        if (observation == "base_ang_vel")
         {
-            obs_list.push_back(this->obs.lin_vel * this->params.Get<float>("lin_vel_scale"));
-        }
-        else if (observation == "ang_vel")
-        {
-            // In ROS1 Gazebo, the coordinate system for angular velocity is in the world coordinate system.
-            // In ROS2 Gazebo, mujoco and real robot, the coordinate system for angular velocity is in the body coordinate system.
             if (this->ang_vel_axis == "body")
             {
-                obs_list.push_back(this->obs.ang_vel * this->params.Get<float>("ang_vel_scale"));
+                obs_list.push_back(this->obs.ang_vel * this->meta_data->obs_scale);
             }
             else if (this->ang_vel_axis == "world")
             {
-                obs_list.push_back(QuatRotateInverse(this->obs.base_quat, this->obs.ang_vel) * this->params.Get<float>("ang_vel_scale"));
+                obs_list.push_back(QuatRotateInverse(this->obs.base_quat, this->obs.ang_vel) * this->meta_data->obs_scale);
             }
         }
-        else if (observation == "gravity_vec")
+        else if (observation == "projected_gravity")
         {
             obs_list.push_back(QuatRotateInverse(this->obs.base_quat, this->obs.gravity_vec));
         }
-        else if (observation == "commands")
+        else if (observation == "joint_pos")
         {
-            obs_list.push_back(this->obs.commands * this->params.Get<std::vector<float>>("commands_scale"));
+            std::vector<float> dof_pos_rel = this->obs.dof_pos - this->meta_data->default_joint_pos;
+            obs_list.push_back(dof_pos_rel * this->meta_data->obs_scale);
         }
-        else if (observation == "dof_pos")
+        else if (observation == "joint_vel")
         {
-            std::vector<float> dof_pos_rel = this->obs.dof_pos - this->params.Get<std::vector<float>>("default_dof_pos");
-            for (int i : this->params.Get<std::vector<int>>("wheel_indices"))
-            {
-                dof_pos_rel[i] = 0.0f;
-            }
-            obs_list.push_back(dof_pos_rel * this->params.Get<float>("dof_pos_scale"));
-        }
-        else if (observation == "dof_vel")
-        {
-            obs_list.push_back(this->obs.dof_vel * this->params.Get<float>("dof_vel_scale"));
+            obs_list.push_back(this->obs.dof_vel * this->meta_data->obs_scale);
         }
         else if (observation == "actions")
         {
             obs_list.push_back(this->obs.actions);
         }
         // ============= Other Observations =============
-        else if (observation == "whole_body_tracking/motion_command")
+        else if (observation == "command_joint_pos")
         {
-            std::vector<float> motion_cmd;
-            if (this->motion_loader)
-            {
-                auto joint_pos_sdk = this->motion_loader->GetJointPos();
-                auto joint_vel_sdk = this->motion_loader->GetJointVel();
-                auto joint_mapping = this->params.Get<std::vector<int>>("joint_mapping");
-                std::vector<float> joint_pos_training(joint_mapping.size());
-                std::vector<float> joint_vel_training(joint_mapping.size());
-                for (size_t i = 0; i < joint_mapping.size(); ++i)
-                {
-                    joint_pos_training[i] = joint_pos_sdk[joint_mapping[i]];
-                    joint_vel_training[i] = joint_vel_sdk[joint_mapping[i]];
-                }
-                motion_cmd.insert(motion_cmd.end(), joint_pos_training.begin(), joint_pos_training.end());
-                motion_cmd.insert(motion_cmd.end(), joint_vel_training.begin(), joint_vel_training.end());
-            }
-            else
-            {
-                motion_cmd.resize(this->params.Get<int>("num_of_dofs") * 2, 0.0f);
-            }
-            obs_list.push_back(motion_cmd);
+            std::vector<float> joint_pos_training = this->motion_loader->GetJointPos();
+            obs_list.push_back(joint_pos_training);
         }
-        else if (observation == "whole_body_tracking/motion_anchor_ori_b")
+        else if (observation == "command_joint_vel")
+        {
+            std::vector<float> joint_vel_training = this->motion_loader->GetJointVel();
+            obs_list.push_back(joint_vel_training);
+        }
+        else if (observation == "command_anchor_lin_vel_b")
+        {
+            std::vector<float> anchor_lin_vel_b = this->motion_loader->GetJointVel();
+            obs_list.push_back(anchor_lin_vel_b);
+        }
+        else if (observation == "command_anchor_pos_z")
+        {
+            std::vector<float> anchor_pos_z = this->motion_loader->GetAnchorZ();
+            obs_list.push_back(anchor_pos_z);
+        }
+        else if (observation == "command_anchor_project_gravity")
+        {
+            std::vector<float> anchor_projected_gravity = this->motion_loader->GetAnchorProjectedGravity();
+            obs_list.push_back(anchor_projected_gravity);
+        }
+        else if (observation == "motion_anchor_ori_b")
         {
             std::vector<float> anchor_ori(6, 0.0f);
             if (this->motion_loader)
             {
-                auto waist_sdk_indices = this->params.Get<std::vector<int>>("waist_joint_indices");
-                std::vector<float> waist_angles = {
-                    this->obs.dof_pos[InverseJointMapping(waist_sdk_indices[0])],
-                    this->obs.dof_pos[InverseJointMapping(waist_sdk_indices[1])],
-                    this->obs.dof_pos[InverseJointMapping(waist_sdk_indices[2])]
-                };
-                std::vector<float> robot_torso_quat_w = MotionLoader::ComputeTorsoQuat(this->obs.base_quat, waist_angles);
-                std::vector<float> ref_torso_quat_w = this->motion_loader->GetAnchorQuat();
+                std::vector<float> robot_anchor_quat_w = this->obs.base_quat;
+                std::vector<float> ref_anchor_quat_w = this->motion_loader->GetAnchorQuat();
                 std::vector<float> init_quat = this->motion_loader->GetInitQuat();
-                std::vector<float> motion_anchor_quat_w = QuaternionMultiply(init_quat, ref_torso_quat_w);
-                std::vector<float> robot_quat_inv = QuaternionConjugate(robot_torso_quat_w);
+                std::vector<float> motion_anchor_quat_w = QuaternionMultiply(init_quat, ref_anchor_quat_w);
+                std::vector<float> robot_quat_inv = QuaternionConjugate(robot_anchor_quat_w);
                 std::vector<float> relative_quat = QuaternionMultiply(robot_quat_inv, motion_anchor_quat_w);
                 std::vector<float> rot_matrix = QuaternionToRotationMatrix(relative_quat);
                 anchor_ori = MatrixFirstTwoColumns(rot_matrix);
             }
             obs_list.push_back(anchor_ori);
         }
-        else if (observation == "RoboMimic_Deploy/phase")
-        {
-            float motion_time = this->episode_length_buf * this->params.Get<float>("dt") * this->params.Get<int>("decimation");
-            float count = motion_time;
-            float phase = count / this->motion_length;
-            std::vector<float> phase_vec = {phase};
-            obs_list.push_back(phase_vec);
-        }
+
     }
 
     this->obs_dims.clear();
@@ -178,7 +248,7 @@ std::vector<float> RL::ComputeObservation()
     {
         obs.insert(obs.end(), obs_vec.begin(), obs_vec.end());
     }
-    std::vector<float> clamped_obs = clamp(obs, -this->params.Get<float>("clip_obs"), this->params.Get<float>("clip_obs"));
+    std::vector<float> clamped_obs = clamp(obs, -this->meta_data->clip_obs, this->meta_data->clip_obs);
     return clamped_obs;
 }
 
@@ -189,20 +259,20 @@ void RL::InitObservations()
     this->obs.gravity_vec = {0.0f, 0.0f, -1.0f};
     this->obs.commands = {0.0f, 0.0f, 0.0f};
     this->obs.base_quat = {0.0f, 0.0f, 0.0f, 1.0f};
-    this->obs.dof_pos = this->params.Get<std::vector<float>>("default_dof_pos");
+    this->obs.dof_pos = this->meta_data->default_joint_pos;
     this->obs.dof_vel.clear();
-    this->obs.dof_vel.resize(this->params.Get<int>("num_of_dofs"), 0.0f);
+    this->obs.dof_vel.resize(this->meta_data->num_joints, 0.0f);
     this->obs.actions.clear();
-    this->obs.actions.resize(this->params.Get<int>("num_of_dofs"), 0.0f);
+    this->obs.actions.resize(this->meta_data->num_joints, 0.0f);
     this->ComputeObservation();
 }
 
 void RL::InitOutputs()
 {
-    int num_of_dofs = this->params.Get<int>("num_of_dofs");
+    int num_of_dofs = this->meta_data->num_joints;
     this->output_dof_tau.clear();
     this->output_dof_tau.resize(num_of_dofs, 0.0f);
-    this->output_dof_pos = this->params.Get<std::vector<float>>("default_dof_pos");
+    this->output_dof_pos = this->meta_data->default_joint_pos;
     this->output_dof_vel.clear();
     this->output_dof_vel.resize(num_of_dofs, 0.0f);
 }
@@ -222,14 +292,27 @@ void RL::InitJointNum(size_t num_joints)
     this->robot_command.motor_command.resize(num_joints);
 }
 
+std::string RL::InitParams(std::string robot_config_path) {
+    this->ReadYaml(robot_config_path, "config.yaml");
+    std::string model_path = std::string(POLICY_DIR) + "/" + robot_config_path + "/" + this->params.Get<std::string>("model_name");
+    std::cout << model_path << std::endl;
+    std::cout << "Protobuf library version: "
+              << GOOGLE_PROTOBUF_VERSION << std::endl;
+    MetaData meta(model_path);
+    this->meta_data = std::make_shared<MetaData>(model_path);
+}
+
 void RL::InitRL(std::string robot_config_path)
 {
     std::lock_guard<std::mutex> lock(this->model_mutex);
 
-    this->ReadYaml(robot_config_path, "config.yaml");
+    // this->ReadYaml(robot_config_path, "config.yaml");
+    // std::string model_path = std::string(POLICY_DIR) + "/" + robot_config_path + "/" + this->params.Get<std::string>("model_name");
+    // this->meta_data = std::make_shared<MetaData>(model_path);
 
+    std::string model_path = this->InitParams(robot_config_path);
     // init joint num first
-    this->InitJointNum(this->params.Get<int>("num_of_dofs"));
+    this->InitJointNum(this->meta_data->num_joints);
 
     // init rl
     this->InitObservations();
@@ -237,15 +320,14 @@ void RL::InitRL(std::string robot_config_path)
     this->InitControl();
 
     // init obs history
-    const auto& observations_history = this->params.Get<std::vector<int>>("observations_history");  // avoid dangling reference
+    const auto& observations_history = this->meta_data->observations_history;  // avoid dangling reference
     if (!observations_history.empty())
     {
         int history_length = *std::max_element(observations_history.begin(), observations_history.end()) + 1;
-        this->history_obs_buf = ObservationBuffer(1, this->obs_dims, history_length, this->params.Get<std::string>("observations_history_priority"));
+        this->history_obs_buf = ObservationBuffer(1, this->obs_dims, history_length, this->meta_data->observations_history_priority);
     }
 
     // init model
-    std::string model_path = std::string(POLICY_DIR) + "/" + robot_config_path + "/" + this->params.Get<std::string>("model_name");
     this->model = InferenceRuntime::ModelFactory::load_model(model_path);
     if (!this->model)
     {
@@ -255,24 +337,24 @@ void RL::InitRL(std::string robot_config_path)
 
 void RL::ComputeOutput(const std::vector<float> &actions, std::vector<float> &output_dof_pos, std::vector<float> &output_dof_vel, std::vector<float> &output_dof_tau)
 {
-    std::vector<float> actions_scaled = actions * this->params.Get<std::vector<float>>("action_scale");
+    std::vector<float> actions_scaled = actions * this->meta_data->action_scale;
     std::vector<float> pos_actions_scaled = actions_scaled;
     std::vector<float> vel_actions_scaled(actions.size(), 0.0f);
-    for (int i : this->params.Get<std::vector<int>>("wheel_indices"))
-    {
-        pos_actions_scaled[i] = 0.0f;
-        vel_actions_scaled[i] = actions_scaled[i];
-    }
+    // for (int i : this->params.Get<std::vector<int>>("wheel_indices"))
+    // {
+    //     pos_actions_scaled[i] = 0.0f;
+    //     vel_actions_scaled[i] = actions_scaled[i];
+    // }
     std::vector<float> all_actions_scaled = pos_actions_scaled + vel_actions_scaled;
-    output_dof_pos = pos_actions_scaled + this->params.Get<std::vector<float>>("default_dof_pos");
+    output_dof_pos = pos_actions_scaled + this->meta_data->default_joint_pos;
     output_dof_vel = vel_actions_scaled;
-    output_dof_tau = this->params.Get<std::vector<float>>("rl_kp") * (all_actions_scaled + this->params.Get<std::vector<float>>("default_dof_pos") - this->obs.dof_pos) - this->params.Get<std::vector<float>>("rl_kd") * this->obs.dof_vel;
-    output_dof_tau = clamp(output_dof_tau, -this->params.Get<std::vector<float>>("torque_limits"), this->params.Get<std::vector<float>>("torque_limits"));
+    output_dof_tau = this->meta_data->joint_stiffness * (all_actions_scaled + this->meta_data->default_joint_pos - this->obs.dof_pos) - this->meta_data->joint_damping * this->obs.dof_vel;
+    output_dof_tau = clamp(output_dof_tau, -this->meta_data->torque_limits, this->meta_data->torque_limits);
 }
 
 int RL::InverseJointMapping(int idx) const
 {
-    auto joint_mapping = this->params.Get<std::vector<int>>("joint_mapping");
+    auto joint_mapping = this->meta_data->joint_mapping;
     for (size_t i = 0; i < joint_mapping.size(); ++i) {
         if (joint_mapping[i] == idx) return (int)i;
     }
@@ -286,8 +368,8 @@ void RL::TorqueProtect(const std::vector<float>& origin_output_dof_tau)
     for (size_t i = 0; i < origin_output_dof_tau.size(); ++i)
     {
         float torque_value = origin_output_dof_tau[i];
-        float limit_lower = -this->params.Get<std::vector<float>>("torque_limits")[i];
-        float limit_upper = this->params.Get<std::vector<float>>("torque_limits")[i];
+        float limit_lower = -this->meta_data->torque_limits[i];
+        float limit_upper = this->meta_data->torque_limits[i];
 
         if (torque_value < limit_lower || torque_value > limit_upper)
         {
@@ -301,8 +383,8 @@ void RL::TorqueProtect(const std::vector<float>& origin_output_dof_tau)
         {
             int index = out_of_range_indices[i];
             float value = out_of_range_values[i];
-            float limit_lower = -this->params.Get<std::vector<float>>("torque_limits")[index];
-            float limit_upper = this->params.Get<std::vector<float>>("torque_limits")[index];
+            float limit_lower = -this->meta_data->torque_limits[index];
+            float limit_upper = this->meta_data->torque_limits[index];
 
             std::cout << LOGGER::WARNING << "Torque(" << index + 1 << ")=" << value << " out of range(" << limit_lower << ", " << limit_upper << ")" << std::endl;
         }
@@ -502,11 +584,11 @@ void RL::CSVInit(std::string robot_path)
     csv_filename += ".csv";
     std::ofstream file(csv_filename.c_str());
 
-    for(int i = 0; i < this->params.Get<int>("num_of_dofs"); ++i) { file << "tau_cal_" << i << ","; }
-    for(int i = 0; i < this->params.Get<int>("num_of_dofs"); ++i) { file << "tau_est_" << i << ","; }
-    for(int i = 0; i < this->params.Get<int>("num_of_dofs"); ++i) { file << "joint_pos_" << i << ","; }
-    for(int i = 0; i < this->params.Get<int>("num_of_dofs"); ++i) { file << "joint_pos_target_" << i << ","; }
-    for(int i = 0; i < this->params.Get<int>("num_of_dofs"); ++i) { file << "joint_vel_" << i << ","; }
+    for(int i = 0; i < this->meta_data->num_joints; ++i) { file << "tau_cal_" << i << ","; }
+    for(int i = 0; i < this->meta_data->num_joints; ++i) { file << "tau_est_" << i << ","; }
+    for(int i = 0; i < this->meta_data->num_joints; ++i) { file << "joint_pos_" << i << ","; }
+    for(int i = 0; i < this->meta_data->num_joints; ++i) { file << "joint_pos_target_" << i << ","; }
+    for(int i = 0; i < this->meta_data->num_joints; ++i) { file << "joint_vel_" << i << ","; }
 
     file << std::endl;
 
@@ -517,11 +599,11 @@ void RL::CSVLogger(const std::vector<float>& torque, const std::vector<float>& t
 {
     std::ofstream file(csv_filename.c_str(), std::ios_base::app);
 
-    for(int i = 0; i < this->params.Get<int>("num_of_dofs"); ++i) { file << torque[i] << ","; }
-    for(int i = 0; i < this->params.Get<int>("num_of_dofs"); ++i) { file << tau_est[i] << ","; }
-    for(int i = 0; i < this->params.Get<int>("num_of_dofs"); ++i) { file << joint_pos[i] << ","; }
-    for(int i = 0; i < this->params.Get<int>("num_of_dofs"); ++i) { file << joint_pos_target[i] << ","; }
-    for(int i = 0; i < this->params.Get<int>("num_of_dofs"); ++i) { file << joint_vel[i] << ","; }
+    for(int i = 0; i < this->meta_data->num_joints; ++i) { file << torque[i] << ","; }
+    for(int i = 0; i < this->meta_data->num_joints; ++i) { file << tau_est[i] << ","; }
+    for(int i = 0; i < this->meta_data->num_joints; ++i) { file << joint_pos[i] << ","; }
+    for(int i = 0; i < this->meta_data->num_joints; ++i) { file << joint_pos_target[i] << ","; }
+    for(int i = 0; i < this->meta_data->num_joints; ++i) { file << joint_vel[i] << ","; }
 
     file << std::endl;
 
@@ -555,16 +637,16 @@ bool RLFSMState::Interpolate(
         }
     }
 
-    int required_frames = std::max(1, static_cast<int>(std::ceil(duration_seconds / rl.params.Get<float>("dt"))));
+    int required_frames = std::max(1, static_cast<int>(std::ceil(duration_seconds / rl.meta_data->dt)));
     float step = 1.0f / required_frames;
 
     percent += step;
     percent = std::min(percent, 1.0f);
 
-    auto kp = use_fixed_gains ? rl.params.Get<std::vector<float>>("fixed_kp") : rl.params.Get<std::vector<float>>("rl_kp");
-    auto kd = use_fixed_gains ? rl.params.Get<std::vector<float>>("fixed_kd") : rl.params.Get<std::vector<float>>("rl_kd");
+    auto kp = use_fixed_gains ? rl.params.Get<std::vector<float>>("fixed_kp") : rl.meta_data->joint_stiffness;
+    auto kd = use_fixed_gains ? rl.params.Get<std::vector<float>>("fixed_kd") : rl.meta_data->joint_damping;
 
-    for (int i = 0; i < rl.params.Get<int>("num_of_dofs"); ++i)
+    for (int i = 0; i < rl.meta_data->num_joints; ++i)
     {
         fsm_command->motor_command.q[i] = (1 - percent) * start_pos[i] + percent * target_pos[i];
         fsm_command->motor_command.dq[i] = 0;
@@ -591,7 +673,7 @@ void RLFSMState::RLControl()
     std::vector<float> _output_dof_pos, _output_dof_vel;
     if (rl.output_dof_pos_queue.try_pop(_output_dof_pos) && rl.output_dof_vel_queue.try_pop(_output_dof_vel))
     {
-        for (int i = 0; i < rl.params.Get<int>("num_of_dofs"); ++i)
+        for (int i = 0; i < rl.meta_data->num_joints; ++i)
         {
             if (!_output_dof_pos.empty())
             {
@@ -601,8 +683,8 @@ void RLFSMState::RLControl()
             {
                 fsm_command->motor_command.dq[i] = _output_dof_vel[i];
             }
-            fsm_command->motor_command.kp[i] = rl.params.Get<std::vector<float>>("rl_kp")[i];
-            fsm_command->motor_command.kd[i] = rl.params.Get<std::vector<float>>("rl_kd")[i];
+            fsm_command->motor_command.kp[i] = rl.meta_data->joint_stiffness[i];
+            fsm_command->motor_command.kd[i] = rl.meta_data->joint_damping[i];
             fsm_command->motor_command.tau[i] = 0;
         }
     }

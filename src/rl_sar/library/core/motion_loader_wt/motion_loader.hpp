@@ -26,109 +26,87 @@
  * root_pos_x, root_pos_y, root_pos_z, root_quat_x, root_quat_y, root_quat_z, root_quat_w,
  * joint_0, joint_1, ..., joint_N
  */
+
+
+template <typename T> // 模板函数：按索引选择第二维，用于收集body
+std::vector<std::vector<std::vector<T>>> select_indexes(
+    const std::vector<std::vector<std::vector<T>>>& data, 
+    const std::vector<int>& indexes
+) {
+    std::vector<std::vector<std::vector<T>>> result;
+    result.reserve(data.size());
+    for (const auto& frame : data) {
+        std::vector<std::vector<T>> new_frame;
+        new_frame.reserve(indexes.size());
+        for (int idx : indexes) {
+            if (idx >= 0 && idx < frame.size()) {
+                new_frame.push_back(frame[idx]);
+            } else {
+                std::cerr << "索引越界: " << idx << std::endl;
+            }
+        }
+        result.push_back(new_frame);
+    }
+    return result;
+}
+
 class MotionLoader
 {
 public:
     /**
      * @brief Constructor
      * @param motion_file Path to CSV motion file
-     * @param fps Frames per second of the motion data
      */
-    MotionLoader(const std::string& motion_file, float fps);
-
+    MotionLoader(const std::string& motion_file);
     /**
+     * @brief Constructor
+     * @param motion_file Path to CSV motion file
+     * @param indexes Body indexes chosen
+     */
+    MotionLoader(std::string motion_file, const std::vector<int>& indexes, int anchor_index);   
+
+    void trans_body_indexes(const std::vector<int>& indexes);
+
+     /**
      * @brief Update motion to a specific time
      * @param time Current time in seconds
      */
     void Update(float time);
 
-    /**
-     * @brief Reset motion to start with yaw alignment
-     * @param robot_base_quat Current robot base quaternion [w, x, y, z]
-     * @param robot_waist_angles Current robot waist joint angles [yaw, roll, pitch]
-     */
-    void Reset(const std::vector<float>& robot_base_quat, const std::vector<float>& robot_waist_angles);
+    void Reset(const std::vector<float>& robot_anchor_quat);
 
-    /**
-     * @brief Get interpolated joint positions at current time
-     * @return Joint positions vector
-     */
     std::vector<float> GetJointPos() const;
 
-    /**
-     * @brief Get interpolated joint velocities at current time
-     * @return Joint velocities vector
-     */
     std::vector<float> GetJointVel() const;
 
-    /**
-     * @brief Get interpolated root quaternion at current time
-     * @return Root quaternion [w, x, y, z]
-     */
-    std::vector<float> GetRootQuat() const;
-
-    /**
-     * @brief Get anchor (torso) quaternion at current time
-     *
-     * For G1: torso = root * Rz(yaw) * Rx(roll) * Ry(pitch)
-     * where yaw=joint[12], roll=joint[13], pitch=joint[14]
-     *
-     * @return Anchor quaternion [w, x, y, z]
-     */
     std::vector<float> GetAnchorQuat() const;
 
-    /**
-     * @brief Get motion duration in seconds
-     */
+    std::vector<float> GetAnchorZ() const;
+
+    std::vector<float> GetAnchorLinVelb() const;
+
+    std::vector<float> GetAnchorProjectedGravity() const;
+
     float GetDuration() const { return duration_; }
 
-    /**
-     * @brief Get world to init transformation quaternion (yaw alignment)
-     */
     std::vector<float> GetInitQuat() const { return world_to_init_; }
 
     /**
-     * @brief Compute torso quaternion from base quaternion and waist joint angles
-     * @param base_quat Base (pelvis) quaternion [w, x, y, z]
-     * @param waist_angles Waist joint angles [yaw, roll, pitch]
-     * @return Torso quaternion [w, x, y, z]
-     */
-    static std::vector<float> ComputeTorsoQuat(const std::vector<float>& base_quat, const std::vector<float>& waist_angles);
-
-    /**
      * @brief Compute initial yaw alignment quaternion
-     * @param robot_torso_quat Robot's torso quaternion [w, x, y, z]
-     * @param motion_torso_quat Motion's torso quaternion [w, x, y, z]
+     * @param robot_anchor_quat Robot's anchor quaternion [w, x, y, z]
+     * @param motion_anchor_quat Motion's anchor quaternion [w, x, y, z]
      * @return Yaw alignment quaternion [w, x, y, z]
      */
-    static std::vector<float> ComputeYawAlignment(const std::vector<float>& robot_torso_quat, const std::vector<float>& motion_torso_quat);
+    static std::vector<float> ComputeYawAlignment(const std::vector<float>& robot_anchor_quat, const std::vector<float>& motion_anchor_quat);
 
 private:
-    /**
-     * @brief Load motion data from CSV file
-     * @param filename Path to CSV file
-     */
-    void LoadFromCSV(const std::string& filename);
-
-    /**
-     * @brief Compute velocities from positions using finite differences
-     */
-    void ComputeVelocities();
-
-    /**
-     * @brief Spherical linear interpolation between two quaternions
-     * @param q0 First quaternion [w, x, y, z]
-     * @param q1 Second quaternion [w, x, y, z]
-     * @param t Interpolation parameter [0, 1]
-     * @return Interpolated quaternion [w, x, y, z]
-     */
-    std::vector<float> Slerp(const std::vector<float>& q0, const std::vector<float>& q1, float t) const;
-
-    // Motion data storage
-    std::vector<std::vector<float>> root_positions_;     // [T, 3]
-    std::vector<std::vector<float>> root_quaternions_;   // [T, 4] - each is [w, x, y, z]
-    std::vector<std::vector<float>> joint_positions_;    // [T, N]
-    std::vector<std::vector<float>> joint_velocities_;   // [T, N]
+    float fps_;
+    std::vector<std::vector<float>> joint_pos_;
+    std::vector<std::vector<float>> joint_vel_;
+    std::vector<std::vector<std::vector<float>>> body_pos_w_;
+    std::vector<std::vector<std::vector<float>>> body_quat_w_;
+    std::vector<std::vector<std::vector<float>>> body_lin_vel_w_;
+    std::vector<std::vector<std::vector<float>>> body_ang_vel_w_;
 
     // Motion properties
     int num_frames_;
@@ -137,9 +115,8 @@ private:
     float duration_;     // Total duration
 
     // Current interpolation state
-    int index_0_;        // Current frame index
-    int index_1_;        // Next frame index
-    float blend_;        // Interpolation factor [0, 1]
+    int inference_counter_;        // Current frame index
+    int anchor_index_;
 
     // Coordinate transformation
     std::vector<float> world_to_init_;  // For yaw alignment between robot and motion [w, x, y, z]

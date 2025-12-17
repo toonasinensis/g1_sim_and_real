@@ -24,6 +24,7 @@
 #include "inference_runtime.hpp"
 #include "logger.hpp"
 #include "motion_loader.hpp"
+#include "meta_data.hpp"
 
 template <typename T>
 struct RobotCommand
@@ -189,6 +190,7 @@ public:
     ~RL() {};
 
     YamlParams params;
+    std::shared_ptr<MetaData> meta_data;
     Observations<float> obs;
     std::vector<int> obs_dims;
 
@@ -208,6 +210,7 @@ public:
     void InitOutputs();
     void InitControl();
     void InitRL(std::string robot_config_path);
+    std::string InitParams(std::string robot_config_path);
     void InitJointNum(size_t num_joints);
 
     // rl functions

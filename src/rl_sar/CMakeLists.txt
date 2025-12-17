@@ -160,38 +160,38 @@ else()
     message(WARNING "ONNX Runtime not found. Please run: bash download_inference_runtime.sh onnx")
 endif()
 
-# LibTorch Setup
+# # LibTorch Setup
 set(USE_TORCH "OFF")
-set(TORCH_LIBRARIES "")
-set(LIBTORCH_DIR "${INFERENCE_RUNTIME_DIR}/libtorch")
+# set(TORCH_LIBRARIES "")
+# set(LIBTORCH_DIR "${INFERENCE_RUNTIME_DIR}/libtorch")
 
-if(EXISTS "${LIBTORCH_DIR}/include" AND EXISTS "${LIBTORCH_DIR}/lib")
-    set(USE_TORCH "ON")
-    add_compile_definitions(USE_TORCH)
+# if(EXISTS "${LIBTORCH_DIR}/include" AND EXISTS "${LIBTORCH_DIR}/lib")
+#     set(USE_TORCH "ON")
+#     add_compile_definitions(USE_TORCH)
 
-    message(STATUS "Found LibTorch at: ${LIBTORCH_DIR}")
+#     message(STATUS "Found LibTorch at: ${LIBTORCH_DIR}")
 
-    # For Jetson with old CMake: set common Jetson CUDA architectures to avoid CUDA17 requirement
-    if(CMAKE_VERSION VERSION_LESS "3.18")
-        # Common Jetson architectures: 5.3(Nano), 6.2(TX2), 7.2(Xavier), 8.7(Orin)
-        set(TORCH_CUDA_ARCH_LIST "5.3;6.2;7.2;8.7" CACHE STRING "CUDA architectures")
-        set(ENV{TORCH_CUDA_ARCH_LIST} "5.3;6.2;7.2;8.7")
-        message(STATUS "CMake ${CMAKE_VERSION} detected - using common Jetson CUDA architectures")
-    endif()
+#     # For Jetson with old CMake: set common Jetson CUDA architectures to avoid CUDA17 requirement
+#     if(CMAKE_VERSION VERSION_LESS "3.18")
+#         # Common Jetson architectures: 5.3(Nano), 6.2(TX2), 7.2(Xavier), 8.7(Orin)
+#         set(TORCH_CUDA_ARCH_LIST "5.3;6.2;7.2;8.7" CACHE STRING "CUDA architectures")
+#         set(ENV{TORCH_CUDA_ARCH_LIST} "5.3;6.2;7.2;8.7")
+#         message(STATUS "CMake ${CMAKE_VERSION} detected - using common Jetson CUDA architectures")
+#     endif()
 
-    set(CMAKE_PREFIX_PATH "${LIBTORCH_DIR};${CMAKE_PREFIX_PATH}")
-    find_package(Torch QUIET)
+#     set(CMAKE_PREFIX_PATH "${LIBTORCH_DIR};${CMAKE_PREFIX_PATH}")
+#     find_package(Torch QUIET)
 
-    if(Torch_FOUND)
-        message(STATUS "LibTorch version: ${Torch_VERSION}")
-        message(STATUS "Torch libraries: ${TORCH_LIBRARIES}")
-    else()
-        set(USE_TORCH "OFF")
-        message(WARNING "LibTorch found but find_package(Torch) failed")
-    endif()
-else()
-    message(WARNING "LibTorch not found. Please run: bash download_inference_runtime.sh libtorch")
-endif()
+#     if(Torch_FOUND)
+#         message(STATUS "LibTorch version: ${Torch_VERSION}")
+#         message(STATUS "Torch libraries: ${TORCH_LIBRARIES}")
+#     else()
+#         set(USE_TORCH "OFF")
+#         message(WARNING "LibTorch found but find_package(Torch) failed")
+#     endif()
+# else()
+#     message(WARNING "LibTorch not found. Please run: bash download_inference_runtime.sh libtorch")
+# endif()
 
 # RPATH Configuration for inference libraries
 if(USE_TORCH OR USE_ONNX)
@@ -338,7 +338,10 @@ include_directories(
     library/core/loop
     library/core/fsm
     library/core/vector_math
-    library/core/motion_loader
+    # library/core/motion_loader
+    library/core/motion_loader_wt
+    library/core/onnx_meta_data
+    library/thirdparty
     library/core/inference_runtime
     library/core/logger
     fsm_robot
@@ -365,16 +368,37 @@ if(NOT USE_CMAKE)
 endif()
 
 # library for motion loader
-add_library(motion_loader library/core/motion_loader/motion_loader.cpp)
+# add_library(motion_loader library/core/motion_loader/motion_loader.cpp)
+add_library(motion_loader library/core/motion_loader_wt/motion_loader.cpp)
+
+find_package(Protobuf REQUIRED)
+
+add_library(meta_data
+    library/core/onnx_meta_data/meta_data.cpp
+    library/core/onnx_meta_data/onnx/onnx.pb.cc
+)
+
+target_include_directories(meta_data
+    PUBLIC
+        ${Protobuf_INCLUDE_DIRS}
+        library/core/onnx_meta_data
+)
+
+target_link_libraries(meta_data
+    PRIVATE
+    ${Protobuf_LIBRARIES}
+)
 
 # library for rl sdk
 add_library(rl_sdk library/core/rl_sdk/rl_sdk.cpp)
 target_link_libraries(rl_sdk PUBLIC
     motion_loader
+    meta_data
     inference_runtime
     Python3::Python
     Python3::Module
     TBB::tbb
+    dw
 )
 find_package(Python3 COMPONENTS NumPy)
 if(Python3_NumPy_FOUND)
@@ -434,6 +458,7 @@ if(SYSTEM_TYPE STREQUAL "Linux")
         rl_sdk
         observation_buffer
             ${YAML_CPP_LIBRARIES}
+            ${Protobuf_LIBRARIES}
     )
     # Add unitree_sdk2 library path to RPATH
     set_target_properties(rl_real_g1 PROPERTIES
@@ -629,3 +654,5 @@ if(USE_MUJOCO)
     message(STATUS "MuJoCo: Enabled")
 endif()
 message(STATUS "========================================")
+message(STATUS "Protobuf include dirs: ${Protobuf_INCLUDE_DIRS}")
+message(STATUS "Protobuf lib dirs: ${Protobuf_LIBRARIES}")
