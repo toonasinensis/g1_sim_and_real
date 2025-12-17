@@ -160,49 +160,14 @@ else()
     message(WARNING "ONNX Runtime not found. Please run: bash download_inference_runtime.sh onnx")
 endif()
 
-# # LibTorch Setup
-set(USE_TORCH "OFF")
-# set(TORCH_LIBRARIES "")
-# set(LIBTORCH_DIR "${INFERENCE_RUNTIME_DIR}/libtorch")
-
-# if(EXISTS "${LIBTORCH_DIR}/include" AND EXISTS "${LIBTORCH_DIR}/lib")
-#     set(USE_TORCH "ON")
-#     add_compile_definitions(USE_TORCH)
-
-#     message(STATUS "Found LibTorch at: ${LIBTORCH_DIR}")
-
-#     # For Jetson with old CMake: set common Jetson CUDA architectures to avoid CUDA17 requirement
-#     if(CMAKE_VERSION VERSION_LESS "3.18")
-#         # Common Jetson architectures: 5.3(Nano), 6.2(TX2), 7.2(Xavier), 8.7(Orin)
-#         set(TORCH_CUDA_ARCH_LIST "5.3;6.2;7.2;8.7" CACHE STRING "CUDA architectures")
-#         set(ENV{TORCH_CUDA_ARCH_LIST} "5.3;6.2;7.2;8.7")
-#         message(STATUS "CMake ${CMAKE_VERSION} detected - using common Jetson CUDA architectures")
-#     endif()
-
-#     set(CMAKE_PREFIX_PATH "${LIBTORCH_DIR};${CMAKE_PREFIX_PATH}")
-#     find_package(Torch QUIET)
-
-#     if(Torch_FOUND)
-#         message(STATUS "LibTorch version: ${Torch_VERSION}")
-#         message(STATUS "Torch libraries: ${TORCH_LIBRARIES}")
-#     else()
-#         set(USE_TORCH "OFF")
-#         message(WARNING "LibTorch found but find_package(Torch) failed")
-#     endif()
-# else()
-#     message(WARNING "LibTorch not found. Please run: bash download_inference_runtime.sh libtorch")
-# endif()
 
 # RPATH Configuration for inference libraries
-if(USE_TORCH OR USE_ONNX)
+if(USE_ONNX)
     set(CMAKE_SKIP_BUILD_RPATH FALSE)
     set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
 
     set(PREBUILT_LIB_PATHS "")
-    if(USE_TORCH)
-        list(APPEND PREBUILT_LIB_PATHS "${LIBTORCH_DIR}/lib")
-    endif()
     if(USE_ONNX)
         list(APPEND PREBUILT_LIB_PATHS "${ONNX_RUNTIME_DIR}/lib")
     endif()
@@ -241,19 +206,6 @@ elseif(SYSTEM_TYPE STREQUAL "Darwin")
     link_directories(/opt/homebrew/lib)
     if(YAML_CPP_INCLUDE_DIR)
         include_directories(${YAML_CPP_INCLUDE_DIR})
-    endif()
-
-    # Find OpenMP (required by LibTorch on macOS)
-    find_library(OMP_LIB NAMES omp PATHS /opt/homebrew/lib /opt/homebrew/opt/libomp/lib)
-    if(OMP_LIB)
-        message(STATUS "Found OpenMP library: ${OMP_LIB}")
-        set(OPENMP_LIBRARIES ${OMP_LIB})
-        # Add OpenMP path to RPATH (for LibTorch dependency)
-        get_filename_component(OMP_LIB_DIR "${OPENMP_LIBRARIES}" DIRECTORY)
-        set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH};${OMP_LIB_DIR}")
-        message(STATUS "Added OpenMP to RPATH: ${OMP_LIB_DIR}")
-    else()
-        message(WARNING "OpenMP not found. Please install: brew install libomp")
     endif()
 endif()
 
@@ -349,14 +301,6 @@ include_directories(
 
 # library for inference runtime
 add_library(inference_runtime library/core/inference_runtime/inference_runtime.cpp)
-if(USE_TORCH)
-    target_link_libraries(inference_runtime PUBLIC ${TORCH_LIBRARIES})
-    target_compile_definitions(inference_runtime PRIVATE USE_TORCH)
-    # Link OpenMP on macOS (required by LibTorch)
-    if(SYSTEM_TYPE STREQUAL "Darwin" AND OPENMP_LIBRARIES)
-        target_link_libraries(inference_runtime PUBLIC ${OPENMP_LIBRARIES})
-    endif()
-endif()
 if(USE_ONNX)
     target_link_libraries(inference_runtime PUBLIC ${ONNX_RUNTIME_LIB})
     target_compile_definitions(inference_runtime PRIVATE USE_ONNX)
@@ -372,12 +316,13 @@ endif()
 add_library(motion_loader library/core/motion_loader_wt/motion_loader.cpp)
 
 find_package(Protobuf REQUIRED)
-
+message(STATUS "Protobuf include dirs: ${Protobuf_INCLUDE_DIRS}")
+# 有libtorch第二个会错
+message(STATUS "Protobuf lib dirs: ${Protobuf_LIBRARIES}")
 add_library(meta_data
     library/core/onnx_meta_data/meta_data.cpp
     library/core/onnx_meta_data/onnx/onnx.pb.cc
 )
-
 target_include_directories(meta_data
     PUBLIC
         ${Protobuf_INCLUDE_DIRS}
@@ -458,7 +403,6 @@ if(SYSTEM_TYPE STREQUAL "Linux")
         rl_sdk
         observation_buffer
             ${YAML_CPP_LIBRARIES}
-            ${Protobuf_LIBRARIES}
     )
     # Add unitree_sdk2 library path to RPATH
     set_target_properties(rl_real_g1 PROPERTIES
@@ -606,7 +550,6 @@ endif()
 # add_executable(test_inference_stability test/test_inference_stability.cpp)
 # target_link_libraries(test_inference_stability
 #     inference_runtime
-#     ${TORCH_LIBRARIES}
 #     ${ONNX_RUNTIME_LIB}
 # )
 # install(TARGETS test_inference_stability DESTINATION lib/${PROJECT_NAME})
@@ -623,21 +566,7 @@ message(STATUS "Compiler: ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}
 message(STATUS "USE_CMAKE: ${USE_CMAKE}")
 message(STATUS "----------------------------------------")
 message(STATUS "Backend Configuration:")
-message(STATUS "USE_TORCH: ${USE_TORCH}")
 message(STATUS "USE_ONNX: ${USE_ONNX}")
-if(USE_TORCH)
-    if(Torch_VERSION)
-        message(STATUS "LibTorch version: ${Torch_VERSION}")
-    else()
-        message(STATUS "LibTorch: Available")
-    endif()
-    if(IS_JETSON)
-        message(STATUS "LibTorch: Jetson device detected")
-        if(JETPACK_VERSION)
-            message(STATUS "JetPack version: ${JETPACK_VERSION}")
-        endif()
-    endif()
-endif()
 if(USE_ONNX)
     if(ONNX_RUNTIME_VERSION)
         message(STATUS "ONNX Runtime version: ${ONNX_RUNTIME_VERSION}")
@@ -654,5 +583,3 @@ if(USE_MUJOCO)
     message(STATUS "MuJoCo: Enabled")
 endif()
 message(STATUS "========================================")
-message(STATUS "Protobuf include dirs: ${Protobuf_INCLUDE_DIRS}")
-message(STATUS "Protobuf lib dirs: ${Protobuf_LIBRARIES}")

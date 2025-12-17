@@ -180,11 +180,11 @@ void RL_Real::SetCommand(const RobotCommand<float> *command)
     for (int i = 0; i < this->meta_data->num_joints; ++i)
     {
         this->unitree_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].mode() = 1; // 1:Enable, 0:Disable
-        this->unitree_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].q() = command->motor_command.q[i] * 0;
-        this->unitree_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].dq() = command->motor_command.dq[i] * 0;
-        this->unitree_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].kp() = command->motor_command.kp[i] * 0;
-        this->unitree_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].kd() = command->motor_command.kd[i] * 0;
-        this->unitree_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].tau() = command->motor_command.tau[i] * 0;
+        this->unitree_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].q() = command->motor_command.q[i];
+        this->unitree_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].dq() = command->motor_command.dq[i];
+        this->unitree_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].kp() = command->motor_command.kp[i];
+        this->unitree_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].kd() = command->motor_command.kd[i];
+        this->unitree_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].tau() = command->motor_command.tau[i];
     }
 
     this->unitree_low_command.crc() = Crc32Core((uint32_t *)&unitree_low_command, (sizeof(LowCmd_) >> 2) - 1);
@@ -353,7 +353,7 @@ void RL_Real::LowStateHandler(const void *message)
 void RL_Real::ImuTorsoHandler(const void *message)
 {
     this->unitree_imu_torso = *(const IMUState_ *)message;
-    std::cout<<"IMU torso quaternion: "<<this->unitree_imu_torso.quaternion()[0]<<" ";
+    // std::cout<<"IMU torso quaternion: "<<this->unitree_imu_torso.quaternion()[0]<<" ";
 }
  
  
@@ -365,7 +365,7 @@ int main(int argc, char **argv)
         std::cout << LOGGER::ERROR << "Usage: " << argv[0] << " networkInterface" << std::endl;
         throw std::runtime_error("Invalid arguments");
     }
-    ChannelFactory::Instance()->Init(1, "lo");
+    ChannelFactory::Instance()->Init(1, "lo"); // channel 本地 
 
     RL_Real rl_sar(argc, argv);
     while (1) { sleep(10); }

@@ -115,7 +115,7 @@ private:
     float duration_;     // Total duration
 
     // Current interpolation state
-    int inference_counter_;        // Current frame index
+    int inference_counter_ = 0;        // Current frame index
     int anchor_index_;
 
     // Coordinate transformation

@@ -4,6 +4,7 @@
  */
 
 #include "rl_sdk.hpp"
+#include <stdexcept>
 
 void RL::StateController(const RobotState<float>* state, RobotCommand<float>* command)
 {
@@ -164,7 +165,7 @@ std::vector<float> RL::ComputeObservation()
     for (const std::string &observation : this->meta_data->observation_names)
     {
         // ============= Base Observations =============
-        if (observation == "base_ang_vel")
+        if (observation == "base_ang_vel") // TODO
         {
             if (this->ang_vel_axis == "body")
             {
@@ -205,7 +206,7 @@ std::vector<float> RL::ComputeObservation()
         }
         else if (observation == "command_anchor_lin_vel_b")
         {
-            std::vector<float> anchor_lin_vel_b = this->motion_loader->GetJointVel();
+            std::vector<float> anchor_lin_vel_b = this->motion_loader->GetAnchorLinVelb();
             obs_list.push_back(anchor_lin_vel_b);
         }
         else if (observation == "command_anchor_pos_z")
@@ -234,7 +235,13 @@ std::vector<float> RL::ComputeObservation()
             }
             obs_list.push_back(anchor_ori);
         }
-
+        else if (observation == "command_dummy")
+        {
+            obs_list.push_back({0.0, 0.0});
+        }
+        else {
+            throw std::runtime_error("Unknow observation name: " + observation);
+        }
     }
 
     this->obs_dims.clear();
@@ -248,6 +255,15 @@ std::vector<float> RL::ComputeObservation()
     {
         obs.insert(obs.end(), obs_vec.begin(), obs_vec.end());
     }
+
+    // for (auto num : obs) {
+    //     std::cout << num << ", ";
+    // }
+    // std::cout << obs.size();
+    // std::cout << std::endl;
+    // std::cout << std::endl;
+    // std::cout << std::endl;
+
     std::vector<float> clamped_obs = clamp(obs, -this->meta_data->clip_obs, this->meta_data->clip_obs);
     return clamped_obs;
 }
@@ -296,10 +312,12 @@ std::string RL::InitParams(std::string robot_config_path) {
     this->ReadYaml(robot_config_path, "config.yaml");
     std::string model_path = std::string(POLICY_DIR) + "/" + robot_config_path + "/" + this->params.Get<std::string>("model_name");
     std::cout << model_path << std::endl;
-    std::cout << "Protobuf library version: "
-              << GOOGLE_PROTOBUF_VERSION << std::endl;
+    // std::cout << "Protobuf library version: "
+    //           << GOOGLE_PROTOBUF_VERSION << std::endl;
     MetaData meta(model_path);
     this->meta_data = std::make_shared<MetaData>(model_path);
+    // std::cout << this->meta_data->anchor_body_name << std::endl;
+    return model_path;
 }
 
 void RL::InitRL(std::string robot_config_path)
@@ -648,12 +666,14 @@ bool RLFSMState::Interpolate(
 
     for (int i = 0; i < rl.meta_data->num_joints; ++i)
     {
+        // std::cout << fsm_command->motor_command.q[i] << ", ";
         fsm_command->motor_command.q[i] = (1 - percent) * start_pos[i] + percent * target_pos[i];
         fsm_command->motor_command.dq[i] = 0;
         fsm_command->motor_command.kp[i] = kp[i];
         fsm_command->motor_command.kd[i] = kd[i];
         fsm_command->motor_command.tau[i] = 0;
     }
+    // std::cout << std::endl;
 
     if (!description.empty())
     {
@@ -675,14 +695,16 @@ void RLFSMState::RLControl()
     {
         for (int i = 0; i < rl.meta_data->num_joints; ++i)
         {
+            // std::vector<float> mjp = rl.motion_loader->GetJointPos();
             if (!_output_dof_pos.empty())
             {
                 fsm_command->motor_command.q[i] = _output_dof_pos[i];
             }
-            if (!_output_dof_vel.empty())
-            {
-                fsm_command->motor_command.dq[i] = _output_dof_vel[i];
-            }
+            // if (!_output_dof_vel.empty())
+            // {
+            //     fsm_command->motor_command.dq[i] = _output_dof_vel[i];
+            // }
+            fsm_command->motor_command.dq[i] = 0.0;
             fsm_command->motor_command.kp[i] = rl.meta_data->joint_stiffness[i];
             fsm_command->motor_command.kd[i] = rl.meta_data->joint_damping[i];
             fsm_command->motor_command.tau[i] = 0;

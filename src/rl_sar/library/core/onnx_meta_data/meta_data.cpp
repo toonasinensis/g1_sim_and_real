@@ -66,51 +66,41 @@ std::vector<int> to_int_vector(const std::vector<std::string>& input) {
 MetaData::MetaData(const std::string& path)
     : model(load_onnx(path))
 {
-    joint_names_sdk = {
-        "left_hip_pitch_joint",
-        "right_hip_pitch_joint",
-        "waist_yaw_joint",
-        "left_hip_roll_joint",
-        "right_hip_roll_joint",
-        "waist_roll_joint",
-        "left_hip_yaw_joint",
-        "right_hip_yaw_joint",
-        "waist_pitch_joint",
-        "left_knee_joint",
-        "right_knee_joint",
-        "left_shoulder_pitch_joint",
-        "right_shoulder_pitch_joint",
-        "left_ankle_pitch_joint",
-        "right_ankle_pitch_joint",
-        "left_shoulder_roll_joint",
-        "right_shoulder_roll_joint",
-        "left_ankle_roll_joint",
-        "right_ankle_roll_joint",
-        "left_shoulder_yaw_joint",
-        "right_shoulder_yaw_joint",
-        "left_elbow_joint",
-        "right_elbow_joint",
-        "left_wrist_roll_joint",
-        "right_wrist_roll_joint",
-        "left_wrist_pitch_joint",
-        "right_wrist_pitch_joint",
-        "left_wrist_yaw_joint",
-        "right_wrist_yaw_joint"
-    };
-
-    clip_actions_upper.assign(29, 100.0f);
-    clip_actions_lower.assign(29, -100.0f);
-
-    torque_limits = {
-        88,88,88,139,139,50,88,88,50,
-        139,139,25,25,50,50,25,25,
-        50,50,25,25,25,25,25,25,
-        5,5,5,5
-    };
-
     for (const auto& prop : model.metadata_props()) {
         const auto& key = prop.key();
         const auto& val = prop.value();
+
+        joint_names_sdk = {
+            "left_hip_pitch_joint", 
+            "left_hip_roll_joint", 
+            "left_hip_yaw_joint", 
+            "left_knee_joint", 
+            "left_ankle_pitch_joint", 
+            "left_ankle_roll_joint",
+            "right_hip_pitch_joint", 
+            "right_hip_roll_joint", 
+            "right_hip_yaw_joint", 
+            "right_knee_joint", 
+            "right_ankle_pitch_joint", 
+            "right_ankle_roll_joint",
+            "waist_yaw_joint", 
+            "waist_roll_joint", 
+            "waist_pitch_joint",
+            "left_shoulder_pitch_joint", 
+            "left_shoulder_roll_joint", 
+            "left_shoulder_yaw_joint", 
+            "left_elbow_joint", 
+            "left_wrist_roll_joint", 
+            "left_wrist_pitch_joint", 
+            "left_wrist_yaw_joint",
+            "right_shoulder_pitch_joint", 
+            "right_shoulder_roll_joint", 
+            "right_shoulder_yaw_joint", 
+            "right_elbow_joint", 
+            "right_wrist_roll_joint", 
+            "right_wrist_pitch_joint", 
+            "right_wrist_yaw_joint"
+        };
 
         if (key == "run_path") {
             run_path = val;
@@ -136,10 +126,38 @@ MetaData::MetaData(const std::string& path)
             body_names = split_string(val, ',');
         } else if (key == "body_indexes") {
             body_indexes = to_int_vector(split_string(val, ','));
+        } else {
+            throw std::runtime_error("Unknown metadata key names: " + key);
         }
     }
-
+    
     get_anchor_index();
+
+    clip_actions_upper.assign(29, 100.0f);
+    clip_actions_lower.assign(29, -100.0f);
+    clip_obs = 100.0f;
+    obs_scale = 1.0f;
+
+    torque_limits.assign(29, 139.0f);
+    // torque_limits = {
+    //     88,88,88,139,139,50,88,88,50,
+    //     139,139,25,25,50,50,25,25,
+    //     50,50,25,25,25,25,25,25,
+    //     5,5,5,5
+    // }; 
+
+    observations_history_priority = "time";
+    observations_history_size = 10;
+    latested_back = true;
+    solve_observation_history();
+    
+    // dt = 0.005f;
+    // decimation = 4;
+    dt = 0.001f;
+    decimation = 20;
+    // for (auto his: observations_history) {
+    //     std::cout << his << std::endl;
+    // }
 }
 
 void MetaData::solve_joint_mapping() {
@@ -154,6 +172,22 @@ void MetaData::solve_joint_mapping() {
         joint_mapping.push_back(
             std::distance(joint_names_sdk.begin(), it)
         );
+    }
+    // for (auto ii: joint_mapping) {
+    //     std::cout << ii << std::endl;
+    // }
+}
+
+void MetaData::solve_observation_history() {
+    if (latested_back) {
+        for (int i = observations_history_size - 1; i >= 0; i--) {
+            observations_history.push_back(i);
+        }
+    }
+    else {
+        for (int i = 0; i < observations_history_size; i++) {
+            observations_history.push_back(i);
+        }
     }
 }
 
