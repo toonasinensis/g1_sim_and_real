@@ -292,7 +292,7 @@ include_directories(
     library/core/vector_math
     # library/core/motion_loader
     library/core/motion_loader_wt
-    library/core/onnx_meta_data
+    library/core/json_meta_data
     library/thirdparty
     library/core/inference_runtime
     library/core/logger
@@ -315,23 +315,12 @@ endif()
 # add_library(motion_loader library/core/motion_loader/motion_loader.cpp)
 add_library(motion_loader library/core/motion_loader_wt/motion_loader.cpp)
 
-find_package(Protobuf REQUIRED)
-message(STATUS "Protobuf include dirs: ${Protobuf_INCLUDE_DIRS}")
-# 有libtorch第二个会错
-message(STATUS "Protobuf lib dirs: ${Protobuf_LIBRARIES}")
 add_library(meta_data
-    library/core/onnx_meta_data/meta_data.cpp
-    library/core/onnx_meta_data/onnx/onnx.pb.cc
+    library/core/json_meta_data/meta_data.cpp
 )
 target_include_directories(meta_data
     PUBLIC
-        ${Protobuf_INCLUDE_DIRS}
-        library/core/onnx_meta_data
-)
-
-target_link_libraries(meta_data
-    PRIVATE
-    ${Protobuf_LIBRARIES}
+    library/core/json_meta_data
 )
 
 # library for rl sdk

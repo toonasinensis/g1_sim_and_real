@@ -311,11 +311,10 @@ void RL::InitJointNum(size_t num_joints)
 std::string RL::InitParams(std::string robot_config_path) {
     this->ReadYaml(robot_config_path, "config.yaml");
     std::string model_path = std::string(POLICY_DIR) + "/" + robot_config_path + "/" + this->params.Get<std::string>("model_name");
-    std::cout << model_path << std::endl;
+    std::string metadata_path = std::string(POLICY_DIR) + "/" + robot_config_path + "/" + this->params.Get<std::string>("metadata_name");
     // std::cout << "Protobuf library version: "
     //           << GOOGLE_PROTOBUF_VERSION << std::endl;
-    MetaData meta(model_path);
-    this->meta_data = std::make_shared<MetaData>(model_path);
+    this->meta_data = std::make_shared<MetaData>(metadata_path);
     // std::cout << this->meta_data->anchor_body_name << std::endl;
     return model_path;
 }

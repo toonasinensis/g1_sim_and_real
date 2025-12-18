@@ -1,75 +1,12 @@
 # 只存放与策略无关的参数
 
 g1/whole_body_tracking/wbc1217:
-  model_name: "2025-12-16_03-37-44_anchorp_add_noitom_aug_model_4500.onnx"
+  model_name: "2025-12-16_03-37-44_anchorp_add_noitom_aug_model_4500.onnx" # 配置文件
+  metadata_name: "metadata.json"
   # fixed_kp: [40.20, 40.20, 40.20, 99.10, 99.10, 28.50, 40.20, 40.20, 28.50, 99.10, 99.10, 14.30, 14.30, 28.50, 28.50, 14.30, 14.30, 28.50, 28.50, 14.30, 14.30, 14.30, 14.30, 14.30, 14.30, 16.80, 16.80, 16.80, 16.80]
   # fixed_kd: [2.56, 2.56, 2.56, 6.31, 6.31, 1.81, 2.56, 2.56, 1.81, 6.31, 6.31, 0.91, 0.91, 1.81, 1.81, 0.91, 0.91, 1.81, 1.81, 0.91, 0.91, 0.91, 0.91, 0.91, 0.91, 1.07, 1.07, 1.07, 1.07]
   fixed_kp: [90.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0, 90.0]
   fixed_kd: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
 
-  motion_file: "fall.json"
+  motion_file: "highwalk_1203_1_high.json"
   standing_file: "stand.json"
-
-
-    # SDK
-    # "left_hip_pitch_joint", 
-    # "left_hip_roll_joint", 
-    # "left_hip_yaw_joint", 
-    # "left_knee_joint", 
-    # "left_ankle_pitch_joint", 
-    # "left_ankle_roll_joint",
-    # "right_hip_pitch_joint", 
-    # "right_hip_roll_joint", 
-    # "right_hip_yaw_joint", 
-    # "right_knee_joint", 
-    # "right_ankle_pitch_joint", 
-    # "right_ankle_roll_joint",
-    # "waist_yaw_joint", 
-    # "waist_roll_joint", 
-    # "waist_pitch_joint",
-    # "left_shoulder_pitch_joint", 
-    # "left_shoulder_roll_joint", 
-    # "left_shoulder_yaw_joint", 
-    # "left_elbow_joint", 
-    # "left_wrist_roll_joint", 
-    # "left_wrist_pitch_joint", 
-    # "left_wrist_yaw_joint",
-    # "right_shoulder_pitch_joint", 
-    # "right_shoulder_roll_joint", 
-    # "right_shoulder_yaw_joint", 
-    # "right_elbow_joint", 
-    # "right_wrist_roll_joint", 
-    # "right_wrist_pitch_joint", 
-    # "right_wrist_yaw_joint"
-
-
-    # LAB
-    # // left_hip_pitch_joint
-    # // right_hip_pitch_joint
-    # // waist_yaw_joint
-    # // left_hip_roll_joint
-    # // right_hip_roll_joint
-    # // waist_roll_joint
-    # // left_hip_yaw_joint
-    # // right_hip_yaw_joint
-    # // waist_pitch_joint
-    # // left_knee_joint
-    # // right_knee_joint
-    # // left_shoulder_pitch_joint
-    # // right_shoulder_pitch_joint
-    # // left_ankle_pitch_joint
-    # // right_ankle_pitch_joint
-    # // left_shoulder_roll_joint
-    # // right_shoulder_roll_joint
-    # // left_ankle_roll_joint
-    # // right_ankle_roll_joint
-    # // left_shoulder_yaw_joint
-    # // right_shoulder_yaw_joint
-    # // left_elbow_joint
-    # // right_elbow_joint
-    # // left_wrist_roll_joint
-    # // right_wrist_roll_joint
-    # // left_wrist_pitch_joint
-    # // right_wrist_pitch_joint
-    # // left_wrist_yaw_joint
-    # // right_wrist_yaw_joint
