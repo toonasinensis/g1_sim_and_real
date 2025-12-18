@@ -15,6 +15,7 @@
 #include <algorithm>
 #include "vector_math.hpp"
 #include "../logger/logger.hpp"
+#include "motion_loader_base.hpp"
 
 /**
  * @brief Motion data loader for mimic/dance tasks
@@ -50,7 +51,7 @@ std::vector<std::vector<std::vector<T>>> select_indexes(
     return result;
 }
 
-class MotionLoader
+class MotionLoader : public MotionLoaderBase
 {
 public:
     /**
@@ -75,21 +76,21 @@ public:
 
     void Reset(const std::vector<float>& robot_anchor_quat);
 
-    std::vector<float> GetJointPos() const;
+    std::vector<float> GetJointPos();
 
-    std::vector<float> GetJointVel() const;
+    std::vector<float> GetJointVel();
 
-    std::vector<float> GetAnchorQuat() const;
+    std::vector<float> GetAnchorQuat();
 
-    std::vector<float> GetAnchorZ() const;
+    std::vector<float> GetAnchorZ();
 
-    std::vector<float> GetAnchorLinVelb() const;
+    std::vector<float> GetAnchorLinVelb();
 
-    std::vector<float> GetAnchorProjectedGravity() const;
+    std::vector<float> GetAnchorProjectedGravity();
 
-    float GetDuration() const { return duration_; }
+    float GetDuration() { return duration_; }
 
-    std::vector<float> GetInitQuat() const { return world_to_init_; }
+    std::vector<float> GetInitQuat() { return world_to_init_; }
 
     /**
      * @brief Compute initial yaw alignment quaternion

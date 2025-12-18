@@ -23,7 +23,9 @@
 #include "vector_math.hpp"
 #include "inference_runtime.hpp"
 #include "logger.hpp"
-#include "motion_loader.hpp"
+#include "motion_loader_base.hpp"
+// #include "motion_loader_rt.hpp"
+
 #include "meta_data.hpp"
 
 template <typename T>
@@ -247,7 +249,8 @@ public:
     int InverseJointMapping(int idx) const;
 
     // Motion tracking (for mimic/dance tasks)
-    std::unique_ptr<MotionLoader> motion_loader;
+    std::unique_ptr<MotionLoaderBase> motion_loader;
+
 
     // protect func
     void TorqueProtect(const std::vector<float> &origin_output_dof_tau);

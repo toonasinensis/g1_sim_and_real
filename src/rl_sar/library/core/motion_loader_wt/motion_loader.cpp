@@ -5,6 +5,7 @@
 
 #include "motion_loader.hpp"
 #include "json.hpp"
+#include "motion_loader_base.hpp"
 
 MotionLoader::MotionLoader(const std::string& motion_file)
 {
@@ -63,27 +64,27 @@ void MotionLoader::Reset(const std::vector<float>& robot_anchor_quat)
     std::cout << LOGGER::INFO << "Motion reset with yaw alignment" << std::endl;
 }
 
-std::vector<float> MotionLoader::GetJointPos() const
+std::vector<float> MotionLoader::GetJointPos()
 {
     return joint_pos_[inference_counter_];
 }
 
-std::vector<float> MotionLoader::GetJointVel() const
+std::vector<float> MotionLoader::GetJointVel()
 {
     return joint_vel_[inference_counter_];
 }
 
-std::vector<float> MotionLoader::GetAnchorQuat() const
+std::vector<float> MotionLoader::GetAnchorQuat()
 {
     return body_quat_w_[inference_counter_][anchor_index_];
 }
 
-std::vector<float> MotionLoader::GetAnchorZ() const
+std::vector<float> MotionLoader::GetAnchorZ()
 {
     return {body_pos_w_[inference_counter_][anchor_index_][2]};
 }
 
-std::vector<float> MotionLoader::GetAnchorLinVelb() const 
+std::vector<float> MotionLoader::GetAnchorLinVelb() 
 {
     std::vector<float> lin_vel_w = body_lin_vel_w_[inference_counter_][anchor_index_];
     std::vector<float> anchor_wyxz = GetAnchorQuat();
@@ -91,7 +92,7 @@ std::vector<float> MotionLoader::GetAnchorLinVelb() const
     return lin_vel_b;
 }
 
-std::vector<float> MotionLoader::GetAnchorProjectedGravity() const 
+std::vector<float> MotionLoader::GetAnchorProjectedGravity() 
 {
     std::vector<float> gravity_w = {0.0, 0.0, -1.0};
     std::vector<float> ref_anchor_quat_w = GetAnchorQuat();

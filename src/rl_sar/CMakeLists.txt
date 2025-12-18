@@ -344,6 +344,7 @@ target_link_libraries(rl_sdk PUBLIC
     Python3::Module
     TBB::tbb
     dw
+    Threads::Threads
 )
 find_package(Python3 COMPONENTS NumPy)
 if(Python3_NumPy_FOUND)
@@ -552,6 +553,12 @@ endif()
 #     inference_runtime
 #     ${ONNX_RUNTIME_LIB}
 # )
+
+add_executable(test_motion_loader_rt test/test_motion_loader_rt.cpp)
+target_link_libraries(test_motion_loader_rt
+Threads::Threads
+    
+)
 # install(TARGETS test_inference_stability DESTINATION lib/${PROJECT_NAME})
 
 message(STATUS "========================================")

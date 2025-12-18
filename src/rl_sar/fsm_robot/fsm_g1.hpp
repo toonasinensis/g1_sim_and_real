@@ -8,7 +8,8 @@
 
 #include "fsm.hpp"
 #include "rl_sdk.hpp"
-
+#include "motion_loader_rt.hpp"
+#include "motion_loader.hpp"
 namespace g1_fsm
 {
 
@@ -225,13 +226,89 @@ public:
         {
             return "RLFSMStateRLWBCOffline";
         }
+        else if (rl.control.current_keyboard == Input::Keyboard::Num9 || rl.control.current_gamepad == Input::Gamepad::RB_A)
+        {
+            return "RLFSMStateRLWBCOnline";
+        }
+        return state_name_;
+    }
+};
+ 
+class RLFSMStateRLWBCOnline : public RLFSMState
+{
+public:
+    RLFSMStateRLWBCOnline(RL *rl) : RLFSMState(*rl, "RLFSMStateRLWBCOnline") {}
+
+    void Enter() override
+    {
+        rl.episode_length_buf = 0;
+        // std::cout<<"enter1"<<std::endl;
+        // read params from yaml
+        rl.config_name = "whole_body_tracking/wbc1217";
+        std::string robot_config_path = rl.robot_name + "/" + rl.config_name;
+        try
+        {
+            // Initialize motion loader
+            std::string motion_file_path = std::string(POLICY_DIR) + "/" + robot_config_path + "/" + rl.params.Get<std::string>("motion_file");
+            float fps = 1.0f / (rl.meta_data->dt * rl.meta_data->decimation);
+            
+            rl.motion_loader = std::make_unique<MotionLoaderRT>(9999);
+            // rl.motion_length = rl.motion_loader->GetDuration();
+            rl.motion_loader->Start(); 
+            rl.motion_loader->Reset(fsm_state->imu.quaternion);
+
+            rl.InitRL(robot_config_path);
+            
+            // std::cout << LOGGER::INFO << "Motion duration: " << rl.motion_length << "s" << std::endl;
+
+            rl.now_state = *fsm_state;
+        }
+        catch (const std::exception& e)
+        {
+            std::cout << LOGGER::ERROR << "InitRL() failed: " << e.what() << std::endl;
+            rl.rl_init_done = false;
+            rl.fsm.RequestStateChange("RLFSMStatePassive");
+        }
+    }
+
+    void Run() override
+    {
+        // position transition from last default_dof_pos to current default_dof_pos
+        // if (Interpolate(percent_transition, rl.now_state.motor_state.q, rl.meta_data->default_joint_pos, 0.5f, "Policy transition", true)) return;
+
+        if (!rl.rl_init_done) rl.rl_init_done = true;
+
+        // Calculate motion time and progress
+       
+        // LOGGER::PrintProgress(percent, rl.config_name);
+
+ 
+        RLControl();
+
+       
+    }
+
+    void Exit() override
+    {
+        rl.motion_loader.reset();
+        rl.rl_init_done = false;
+    }
+
+    std::string CheckChange() override
+    {
+        if (rl.control.current_keyboard == Input::Keyboard::Num4 || rl.control.current_gamepad == Input::Gamepad::X)
+        {
+            return "RLFSMStatePassive";
+        }
+        else if (rl.control.current_keyboard == Input::Keyboard::Num2 || rl.control.current_gamepad == Input::Gamepad::B)
+        {
+            return "RLFSMStateRLWBCStanding";
+        }
         return state_name_;
     }
 };
 
-
-} // namespace g1_fsm
-
+};
 class G1FSMFactory : public FSMFactory
 {
 public:
@@ -247,6 +324,8 @@ public:
             return std::make_shared<g1_fsm::RLFSMStateRLWBCOffline>(rl);
         else if (state_name == "RLFSMStateRLWBCStanding")
             return std::make_shared<g1_fsm::RLFSMStateRLWBCStanding>(rl);
+        else if (state_name == "RLFSMStateRLWBCOnline")
+            return std::make_shared<g1_fsm::RLFSMStateRLWBCOnline>(rl);
         return nullptr;
     }
     std::string GetType() const override { return "g1"; }
@@ -257,6 +336,7 @@ public:
             "RLFSMStateGetUp",
             "RLFSMStateRLWBCOffline", 
             "RLFSMStateRLWBCStanding",
+            "RLFSMStateRLWBCOnline",
         };
     }
     std::string GetInitialState() const override { return initial_state_; }
