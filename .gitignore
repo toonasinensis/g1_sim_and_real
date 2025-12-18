@@ -39,6 +39,8 @@ MUJOCO_LOG.TXT
 *.tgz
 *.tar.gz
 temp_extract*/
-
+*.npz
+*.json
+*.onnx
 # robot descriptions
 rl_sar_zoo

@@ -6,10 +6,10 @@
 #include "rl_real_g1.hpp"
 
 #define BACKWARD_HAS_DW 1
-#include "backward.hpp"
-namespace backward{
-    backward::SignalHandling sh;
-}
+// #include "backward.hpp"
+// namespace backward{
+//     backward::SignalHandling sh;
+// }
 RL_Real::RL_Real(int argc, char **argv)
 {
   
@@ -174,21 +174,22 @@ void RL_Real::GetState(RobotState<float> *state)
 
 void RL_Real::SetCommand(const RobotCommand<float> *command)
 {
-    this->unitree_low_command.mode_pr() = static_cast<uint8_t>(this->mode_pr);
-    this->unitree_low_command.mode_machine() = this->mode_machine;
+    LowCmd_ dds_low_command;
+    dds_low_command.mode_pr() = static_cast<uint8_t>(this->mode_pr);
+    dds_low_command.mode_machine() = this->mode_machine;
 
     for (int i = 0; i < this->meta_data->num_joints; ++i)
     {
-        this->unitree_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].mode() = 1; // 1:Enable, 0:Disable
-        this->unitree_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].q() = command->motor_command.q[i];
-        this->unitree_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].dq() = command->motor_command.dq[i];
-        this->unitree_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].kp() = command->motor_command.kp[i];
-        this->unitree_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].kd() = command->motor_command.kd[i];
-        this->unitree_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].tau() = command->motor_command.tau[i];
+        dds_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].mode() = 1; // 1:Enable, 0:Disable
+        dds_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].q() = command->motor_command.q[i];
+        dds_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].dq() = command->motor_command.dq[i];
+        dds_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].kp() = command->motor_command.kp[i];
+        dds_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].kd() = command->motor_command.kd[i];
+        dds_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].tau() = command->motor_command.tau[i];
     }
 
-    this->unitree_low_command.crc() = Crc32Core((uint32_t *)&unitree_low_command, (sizeof(LowCmd_) >> 2) - 1);
-    lowcmd_publisher->Write(unitree_low_command);
+    dds_low_command.crc() = Crc32Core((uint32_t *)&dds_low_command, (sizeof(LowCmd_) >> 2) - 1);
+    lowcmd_publisher->Write(dds_low_command);
 }
 
 void RL_Real::RobotControl()
@@ -365,7 +366,7 @@ int main(int argc, char **argv)
         std::cout << LOGGER::ERROR << "Usage: " << argv[0] << " networkInterface" << std::endl;
         throw std::runtime_error("Invalid arguments");
     }
-    ChannelFactory::Instance()->Init(1, "lo"); // channel 本地 
+    ChannelFactory::Instance()->Init(0, argv[1]); // channel 本地 
 
     RL_Real rl_sar(argc, argv);
     while (1) { sleep(10); }

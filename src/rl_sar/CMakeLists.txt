@@ -14,18 +14,7 @@ if(USE_CMAKE)
     set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 endif()
-
-if(NOT USE_CMAKE)
-    if($ENV{ROS_DISTRO} MATCHES "noetic")
-        add_compile_definitions(USE_ROS1)
-    elseif($ENV{ROS_DISTRO} MATCHES "foxy|humble")
-        add_compile_definitions(USE_ROS2)
-    endif()
-else()
-    message(WARNING "ROS_DISTRO not set, assuming non-ROS mode")
-    add_compile_definitions(USE_CMAKE)
-endif()
-
+ 
 # MuJoCo simulator option
 set(USE_MUJOCO OFF CACHE BOOL "Build with MuJoCo simulator support")
 
@@ -90,19 +79,31 @@ endif()
 
 set(INFERENCE_RUNTIME_DIR "${PROJECT_ROOT_DIR}/library/inference_runtime")
 
-# ONNX Runtime Setup
-set(USE_ONNX "OFF")
-set(ONNX_RUNTIME_LIB "")
-set(ONNX_RUNTIME_DIR "${INFERENCE_RUNTIME_DIR}/onnxruntime")
 
-# Detect Jetson platform
-set(IS_JETSON FALSE)
-if(EXISTS "/etc/nv_tegra_release")
-    set(IS_JETSON TRUE)
-    message(STATUS "Jetson platform detected - ONNX Runtime will be disabled")
+
+
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64")
+    message(STATUS "Current system architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+    set(ARCH_DIR "aarch64")
+    set(ONNX_RUNTIME_DIR "${INFERENCE_RUNTIME_DIR}/onnxruntime-linux-aarch64-1.23.2")
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|AMD64")
+message(STATUS "Current system architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+    set(ARCH_DIR "x86_64")
+    set(ONNX_RUNTIME_DIR "libunitree_legged_sdk_amd64")
+else()
+    message(FATAL_ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
 endif()
 
-if(EXISTS "${ONNX_RUNTIME_DIR}/include" AND EXISTS "${ONNX_RUNTIME_DIR}/lib" AND NOT IS_JETSON)
+
+# ONNX Runtime Setup
+set(ONNX_RUNTIME_LIB "")
+set(ONNX_RUNTIME_DIR "${INFERENCE_RUNTIME_DIR}/onnxruntime-linux-aarch64-1.23.2")
+
+# Detect Jetson platform
+ 
+
+
+if(EXISTS "${ONNX_RUNTIME_DIR}/include" AND EXISTS "${ONNX_RUNTIME_DIR}/lib")# AND NOT IS_JETSON)
     set(USE_ONNX "ON")
     add_compile_definitions(USE_ONNX)
 

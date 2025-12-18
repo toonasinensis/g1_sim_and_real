@@ -18,6 +18,7 @@
 #include "vector_math.hpp"
 #include "../logger/logger.hpp"
 #include "motion_loader_base.hpp"
+#include "unistd.h"
 using asio::ip::udp;
 
 /**
@@ -64,6 +65,7 @@ public:
                      "...\n";
 
         recv_thread_ = std::thread(&MotionLoaderRT::recv_loop, this);
+        sleep(3);
     }
 
     // MocapCmd cmd_saver;
@@ -133,7 +135,7 @@ public:
         }
         else
         {
-            // std::cout <<"No motion data received yet, returning default anchor quaternion." << std::endl;
+            std::cout <<"No motion data received yet, returning default anchor quaternion." << std::endl;
             return std::vector<float>{1.0f, 0.0f, 0.0f, 0.0f}; // 默认值 wxyz
         }
     };
@@ -209,17 +211,7 @@ public:
         return QuaternionNormalize(torso_quat);
     }
 
-    void Reset(const std::vector<float> &robot_base_quat, const std::vector<float> &robot_waist_angles)
-    {
-        // Update(0.0f);
-
-        std::vector<float> robot_torso = ComputeTorsoQuat(robot_base_quat, robot_waist_angles);
-        std::vector<float> motion_torso = GetAnchorQuat();
-        world_to_init_ = ComputeYawAlignment(robot_torso, motion_torso);
-
-        // std::cout << LOGGER::INFO << "Motion reset with yaw alignment" << std::endl;
-    }
-
+ 
     void Reset(const std::vector<float> &robot_anchor_quat)
     {
         // Update(0.0f);
@@ -235,6 +227,8 @@ public:
         std::vector<float> motion_yaw = QuaternionYawOnly(motion_anchor_quat);
         return QuaternionMultiply(robot_yaw, QuaternionConjugate(motion_yaw));
     }
+
+    std::atomic<bool> has_data_ = false;
 
 private:
     void recv_loop()
@@ -254,8 +248,8 @@ private:
             std::lock_guard<std::mutex> lock(cmd_mutex_);
             std::memcpy(&cmd_, recv_buf_.data(), sizeof(MocapCmd));
             // printf("收到帧id: %u\n", cmd_.frame_id);
-            has_data_ = true;
-        }
+            has_data_.store(true, std::memory_order_release);   
+            }
     }
 
     asio::io_context io_;
@@ -266,7 +260,6 @@ private:
     std::atomic<bool> running_;
 
     MocapCmd cmd_;
-    bool has_data_ = false;
     std::mutex cmd_mutex_;
 
     // data 相关

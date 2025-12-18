@@ -47,6 +47,8 @@ public:
 
     virtual std::vector<float> GetInitQuat() = 0;
 
+    bool has_data_ = false; //this is for rt
+
     /**
      * @brief Compute initial yaw alignment quaternion
      * @param robot_anchor_quat Robot's anchor quaternion [w, x, y, z]

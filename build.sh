@@ -33,24 +33,7 @@ setup_inference_runtime() {
     fi
 }
 
-setup_mujoco() {
-    print_header "[Setting up MuJoCo]"
-
-    SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
-    DOWNLOAD_MUJOCO_SCRIPT="${SCRIPT_DIR}/scripts/download_mujoco.sh"
-
-    if [ -f "$DOWNLOAD_MUJOCO_SCRIPT" ]; then
-        print_info "Checking MuJoCo library..."
-        bash "$DOWNLOAD_MUJOCO_SCRIPT" || {
-            print_error "Failed to setup MuJoCo"
-            exit 1
-        }
-        print_success "MuJoCo setup completed!"
-    else
-        print_warning "MuJoCo download script not found: $DOWNLOAD_MUJOCO_SCRIPT"
-    fi
-}
-
+ 
 setup_robot_descriptions() {
     print_header "[Setting up Robot Descriptions]"
 

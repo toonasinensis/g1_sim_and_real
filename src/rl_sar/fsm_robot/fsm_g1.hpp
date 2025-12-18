@@ -76,7 +76,7 @@ public:
         }
         if (percent_getup >= 1.0f)
         {
-            if (rl.control.current_keyboard == Input::Keyboard::Num2 || rl.control.current_gamepad == Input::Gamepad::RB_DPadUp)
+            if (rl.control.current_keyboard == Input::Keyboard::Num2 || rl.control.current_gamepad == Input::Gamepad::B)
             {
                 return "RLFSMStateRLWBCStanding";
             }
@@ -226,7 +226,7 @@ public:
         {
             return "RLFSMStateRLWBCOffline";
         }
-        else if (rl.control.current_keyboard == Input::Keyboard::Num9 || rl.control.current_gamepad == Input::Gamepad::RB_A)
+        else if (rl.control.current_keyboard == Input::Keyboard::Num9 || rl.control.current_gamepad == Input::Gamepad::DPadUp)
         {
             return "RLFSMStateRLWBCOnline";
         }
@@ -237,7 +237,9 @@ public:
 class RLFSMStateRLWBCOnline : public RLFSMState
 {
 public:
-    RLFSMStateRLWBCOnline(RL *rl) : RLFSMState(*rl, "RLFSMStateRLWBCOnline") {}
+    RLFSMStateRLWBCOnline(RL *rl) : RLFSMState(*rl, "RLFSMStateRLWBCOnline") {
+        
+    }
 
     void Enter() override
     {
@@ -255,7 +257,14 @@ public:
             rl.motion_loader = std::make_unique<MotionLoaderRT>(9999);
             // rl.motion_length = rl.motion_loader->GetDuration();
             rl.motion_loader->Start(); 
+            while (!has_data_.load(std::memory_order_acquire)) {
+            // 等待
+            }
+                /* code */
             rl.motion_loader->Reset(fsm_state->imu.quaternion);
+
+            
+            
 
             rl.InitRL(robot_config_path);
             
