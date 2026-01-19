@@ -19,6 +19,14 @@
 #include "../logger/logger.hpp"
 #include "motion_loader_base.hpp"
 #include "unistd.h"
+
+#include <chrono>
+#include <ctime>
+#include <iomanip>
+#include <sstream>
+#include <string>
+#define LOG_REF
+#include "rate_stats.hpp"
 using asio::ip::udp;
 
 /**
@@ -34,7 +42,7 @@ using asio::ip::udp;
 
 struct MocapCmd
 {
-    uint32_t frame_id; // 不能用64位的，会对齐
+    float frame_id; // 不能用64位的，会对齐
     float joint_pos_ref[29];
     float joint_vel_ref[29];     // 29+29=58
     float anchor_lin_vel[3];     // 58+3=61
@@ -42,11 +50,15 @@ struct MocapCmd
     float achor_proj_gravity[3]; // 62+3=65
     float dammuy_cmd[2];         // 65+2=67
     float anchor_quat[4];        // 67+4=71//wxyz
+    float anchor_pos[3];       //for debug
 };
 
 class MotionLoaderRT : public MotionLoaderBase
 {
 public:
+
+
+  
     MotionLoaderRT(int port = 9999)
         : io_(),
           socket_(io_, udp::endpoint(udp::v4(), port)),
@@ -55,8 +67,45 @@ public:
     {
         // 允许端口重用
         // std::cout<<"enter2"<<std::endl;
-
+        
         socket_.set_option(asio::socket_base::reuse_address(true));
+
+        #ifdef LOG_REF
+ ///////////////////////////////////////////////////
+        // 获取当前时间
+        auto now = std::chrono::system_clock::now();
+        std::time_t t = std::chrono::system_clock::to_time_t(now);
+
+        // 转为本地时间
+        std::tm tm{};
+        localtime_r(&t, &tm);   // Linux 推荐（线程安全）
+
+        // 格式化时间
+        std::ostringstream oss;
+        oss << std::put_time(&tm, "%Y-%m-%d_%H-%M-%S");
+
+        std::string csv_filename = "log_recv";
+
+        csv_filename += oss.str();
+        csv_filename += ".csv";
+        this->logfile.open(csv_filename.c_str(), std::ios::out);
+        if (!logfile.is_open()) {
+        throw std::runtime_error("Failed to open log file");
+        }
+
+        logfile << "remote_timestamp" <<  ",";
+        logfile << "recv_timestamp" <<  ",";
+
+        for(int i = 0; i < 3; ++i) { logfile << "ref_anchor_pos" << i << ","; }
+        for(int i = 0; i <4; ++i) { logfile << "ref_anchor_xyzw" << i << ","; }
+        for(int i = 0; i <29; ++i) { logfile << "ref_joint_pos" << i << ","; }
+        for(int i = 0; i < 29; ++i) { logfile << "ref_joint_vel" << i << ","; }
+
+        logfile << '\n';
+
+        // file.close();
+////////////////////////////////////////////////////////////////////
+        #endif
     }
 
     void Start(void)
@@ -76,6 +125,8 @@ public:
         socket_.close();
         if (recv_thread_.joinable())
             recv_thread_.join();
+        
+        logfile.close();
     }
 
     std::pair<bool, MocapCmd> get_cmd(void)
@@ -100,6 +151,22 @@ public:
         {
             std::cout <<"No motion data received yet, returning zero joint positions." << std::endl;
             return std::vector<float>(29, 0.0f);
+        }
+    };
+
+    std::vector<float> GetAnchorPos()
+    {
+        auto [ok, cmd] = get_cmd();
+
+        if (ok)
+        {
+            std::vector<float> Anchor_pos_vec(cmd.anchor_pos, cmd.anchor_pos + 3);
+            return Anchor_pos_vec;
+        }
+        else
+        {
+            std::cout <<"No motion data received yet, returning zero anchor positions." << std::endl;
+            return std::vector<float>(3, 0.0f);
         }
     };
 
@@ -233,9 +300,14 @@ public:
 private:
     void recv_loop()
     {
+        auto now = std::chrono::system_clock::now();
+        uint64_t start_time_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                              now.time_since_epoch()
+                          ).count();
+
+
         while (running_)
         {
-            // std::cout<<"rrrr"<<std::endl;
             udp::endpoint sender;
             size_t len = socket_.receive_from(asio::buffer(recv_buf_), sender);
             // std::cout << "Received " << len << " bytes from " << sender.address().to_string() << std::endl;
@@ -248,9 +320,40 @@ private:
             std::lock_guard<std::mutex> lock(cmd_mutex_);
             std::memcpy(&cmd_, recv_buf_.data(), sizeof(MocapCmd));
             // printf("收到帧id: %u\n", cmd_.frame_id);
+
             has_data_.store(true, std::memory_order_release);   
+            
+
+            #ifdef LOG_REF
+            
+             auto now = std::chrono::system_clock::now();
+            uint64_t current_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
+                              now.time_since_epoch()
+                          ).count();
+            uint64_t elapsed_ms = current_ms - start_time_ms;
+            
+            if (init_frame_id ==0){
+                init_frame_id = cmd_.frame_id;
             }
+            logfile<<cmd_.frame_id - init_frame_id<<",";
+            logfile << elapsed_ms*0.001 << ",";          // 本地时间戳（毫秒）
+            recv_stats.tick(elapsed_ms*0.001);
+            
+            remote_stats.tick(cmd_.frame_id - init_frame_id);
+            //////////////////////////////////////////////////////////////////////////
+            for(int i = 0; i < 3; ++i) { logfile << cmd_.anchor_pos[i] << ","; }
+            for(int i = 0; i < 3; ++i) { logfile << cmd_.anchor_quat[i] << ","; }
+            for(int i = 0; i < 29; ++i) { logfile << cmd_.joint_pos_ref[i] << ","; }
+            for(int i = 0; i < 29; ++i) { logfile << cmd_.joint_vel_ref[i] << ","; }
+            this->logfile << '\n';
+            ///////////////////////////////////////////////////////////////////////////
+            #endif
+        }
     }
+
+
+
+    std::ofstream logfile;
 
     asio::io_context io_;
     udp::socket socket_;
@@ -261,6 +364,9 @@ private:
 
     MocapCmd cmd_;
     std::mutex cmd_mutex_;
+    float init_frame_id = 0; // 不能用64位的，会对齐
+    RateStats recv_stats{"udp_recv", 100, 1};
+    RateStats remote_stats{"udp_remote", 100, 1};
 
     // data 相关
     std::vector<std::vector<float>> joint_pos_;

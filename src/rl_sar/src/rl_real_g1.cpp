@@ -234,10 +234,11 @@ void RL_Real::RunModel()
         // this->TorqueProtect(this->output_dof_tau);
         // this->AttitudeProtect(this->robot_state.imu.quaternion, 75.0f, 75.0f);
 
-#ifdef CSV_LOGGER
-        std::vector<float> tau_est = this->robot_state.motor_state.tau_est;
-        this->CSVLogger(this->output_dof_tau, tau_est, this->obs.dof_pos, this->output_dof_pos, this->obs.dof_vel);
-#endif
+// #ifdef CSV_LOGGER
+//         std::vector<float> tau_est = this->robot_state.motor_state.tau_est;
+//         this->CSVLogger(this->output_dof_tau, tau_est, this->obs.dof_pos, this->output_dof_pos, this->obs.dof_vel,\
+//         this->ref_anchor_pos, this->ref_anchor_wxyz, this->ref_anchor_joint_pos, this->ref_anchor_joint_vel);
+// #endif
     }
 }
 
@@ -342,7 +343,7 @@ void RL_Real::InitLowCmd()
         this->unitree_low_command.motor_cmd()[i].kd() = (0);
         this->unitree_low_command.motor_cmd()[i].tau() = (0);
     }
-}
+} 
 
 void RL_Real::LowStateHandler(const void *message)
 {

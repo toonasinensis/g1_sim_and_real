@@ -15,6 +15,7 @@
 #include <algorithm>
 #include "vector_math.hpp"
 #include "../logger/logger.hpp"
+#include <atomic>
 
 class MotionLoaderBase
 {
@@ -30,6 +31,8 @@ public:
     virtual void Update(float time) {};
 
     virtual void Reset(const std::vector<float> &robot_anchor_quat) = 0;
+
+    virtual std::vector<float> GetAnchorPos() {};
 
     virtual std::vector<float> GetJointPos() = 0;
 
@@ -47,7 +50,7 @@ public:
 
     virtual std::vector<float> GetInitQuat() = 0;
 
-    bool has_data_ = false; //this is for rt
+    std::atomic<bool> has_data_ = false;
 
     /**
      * @brief Compute initial yaw alignment quaternion

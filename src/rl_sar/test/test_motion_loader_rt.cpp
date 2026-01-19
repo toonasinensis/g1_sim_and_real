@@ -22,17 +22,17 @@ int main()
             {
                 last_frame = cmd.frame_id;
 
-                std::cout
-                    << "[Frame " << cmd.frame_id << "] "
-                    << "joint0 pos: " << cmd.joint_pos_ref[0]
-                    << ", vel: " << cmd.joint_vel_ref[0]
-                    << ", anchor_z: " << cmd.anchor_pos_z[0]
-                    << std::endl;
+                // std::cout
+                //     << "[Frame " << cmd.frame_id << "] "
+                //     << "joint0 pos: " << cmd.joint_pos_ref[0]
+                //     << ", vel: " << cmd.joint_vel_ref[0]
+                //     << ", anchor_z: " << cmd.anchor_pos_z[0]
+                //     << std::endl;
             }
         }
 
         // 模拟控制周期 50 Hz
-        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        // std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
 
     return 0;

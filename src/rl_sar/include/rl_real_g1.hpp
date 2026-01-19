@@ -7,7 +7,7 @@
 #define RL_REAL_G1_HPP
 
 // #define PLOT
-// #define CSV_LOGGER
+//  #define CSV_LOGGER
 // #define USE_ROS
 
 #include "rl_sdk.hpp"

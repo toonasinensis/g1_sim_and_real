@@ -132,7 +132,7 @@ public:
         float motion_time = rl.episode_length_buf * rl.meta_data->dt * rl.meta_data->decimation;
         motion_time = std::fmin(motion_time, rl.motion_length);
         float percent = motion_time / rl.motion_length;
-        LOGGER::PrintProgress(percent, rl.config_name);
+        // LOGGER::PrintProgress(percent, rl.config_name);
 
         rl.motion_loader->Update(motion_time);
 
@@ -257,9 +257,11 @@ public:
             rl.motion_loader = std::make_unique<MotionLoaderRT>(9999);
             // rl.motion_length = rl.motion_loader->GetDuration();
             rl.motion_loader->Start(); 
-            while (!has_data_.load(std::memory_order_acquire)) {
-            // 等待
-            }
+            // while (!has_data_.load(std::memory_order_acquire)) {
+            // // 等待
+            // }
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+
                 /* code */
             rl.motion_loader->Reset(fsm_state->imu.quaternion);
 

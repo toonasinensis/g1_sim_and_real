@@ -89,7 +89,8 @@ sudo apt install ros-noetic-teleop-twist-keyboard ros-noetic-controller-interfac
 # ros2-foxy (Ubuntu20.04) / ros2-humble (Ubuntu22.04)
 sudo apt install ros-$ROS_DISTRO-teleop-twist-keyboard ros-$ROS_DISTRO-ros2-control ros-$ROS_DISTRO-ros2-controllers ros-$ROS_DISTRO-control-toolbox ros-$ROS_DISTRO-robot-state-publisher ros-$ROS_DISTRO-joint-state-publisher-gui ros-$ROS_DISTRO-gazebo-ros2-control ros-$ROS_DISTRO-gazebo-ros-pkgs ros-$ROS_DISTRO-xacro
 ```
-
+sudo apt update
+sudo apt install libasio-dev
 ## 编译
 
 在项目根目录中执行下面的脚本编译整个项目

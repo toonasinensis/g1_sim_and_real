@@ -224,6 +224,10 @@ std::vector<float> RL::ComputeObservation()
             std::vector<float> anchor_ori(6, 0.0f);
             if (this->motion_loader)
             {
+                std::vector<float> ref_anchor_xyzw =  this->motion_loader->GetAnchorQuat();
+
+              
+
                 std::vector<float> robot_anchor_quat_w = this->obs.base_quat;
                 std::vector<float> ref_anchor_quat_w = this->motion_loader->GetAnchorQuat();
                 std::vector<float> init_quat = this->motion_loader->GetInitQuat();

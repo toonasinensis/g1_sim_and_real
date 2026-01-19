@@ -7,6 +7,8 @@
 #include <stdexcept>
 #include <iostream>
 #include <numeric>
+#define USE_ONNX
+#include <chrono> // 记得包含
 
 #ifdef USE_TORCH
 #include <ATen/Parallel.h>
@@ -185,6 +187,8 @@ std::vector<float> ONNXModel::forward(const std::vector<std::vector<float>>& inp
 #ifdef USE_ONNX
     try
     {
+        auto t_start = std::chrono::high_resolution_clock::now();
+
         // Create memory info
         Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
 
@@ -215,6 +219,13 @@ std::vector<float> ONNXModel::forward(const std::vector<std::vector<float>>& inp
             1
         );
 
+
+        // --- 推理结束，计算耗时 ---
+        auto t_end = std::chrono::high_resolution_clock::now();
+        auto duration_ms = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
+        std::cout << LOGGER::INFO << "ONNX inference time: " << duration_ms << " us" << std::endl;
+
+        
         // Extract output data
         return extract_output_data(outputs);
     }

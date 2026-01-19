@@ -9,7 +9,7 @@
 ### 
 #192.168.1.14s
 # 定义远程路径、本地路径和要排除的文件夹
-remote_path1="unitree@192.168.1.14:/home/unitree/Desktop/wt_ws/"
+remote_path1="unitree@192.168.123.164:/home/unitree/Desktop/wt_ws/"
 local_path1="/home/walker/Desktop/g1_sim_and_read_ws"
 exclude_folders1=(".vscode" 
                   "logs" 
@@ -27,7 +27,8 @@ done
 
 # 执行 rsync 命令
 rsync -avz $exclude_args $local_path1 $remote_path1
-ssh unitree@192.168.1.14
+ssh unitree@192.168.123.164
+cd ~/Desktop/wt_ws/g1_sim_and_read_ws/g1_sim_and_real
 # ssh steve@s4.v100.vip -p 25168
 # if [ $? -eq 0 ]; then
 #     # 定义要在远程执行的命令
