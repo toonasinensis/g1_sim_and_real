@@ -218,6 +218,7 @@ public:
     // rl functions
     virtual std::vector<float> Forward() = 0;
     std::vector<float> ComputeObservation();
+    std::vector<float> ComputeCmd();
     virtual void GetState(RobotState<float> *state) = 0;
     virtual void SetCommand(const RobotCommand<float> *command) = 0;
     void StateController(const RobotState<float> *state, RobotCommand<float> *command);
@@ -238,6 +239,8 @@ public:
     // history buffer
     ObservationBuffer history_obs_buf;
     std::vector<float> history_obs;
+    std::vector<float> cmd;
+
 
     // others
     int motiontime = 0;

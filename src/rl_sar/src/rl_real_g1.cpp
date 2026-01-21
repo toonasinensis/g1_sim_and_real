@@ -6,10 +6,10 @@
 #include "rl_real_g1.hpp"
 
 #define BACKWARD_HAS_DW 1
-// #include "backward.hpp"
-// namespace backward{
-//     backward::SignalHandling sh;
-// }
+#include "backward.hpp"
+namespace backward{
+    backward::SignalHandling sh;
+}
 RL_Real::RL_Real(int argc, char **argv)
 {
   
@@ -254,17 +254,17 @@ std::vector<float> RL_Real::Forward()
     }
 
     std::vector<float> clamped_obs = this->ComputeObservation();
-
+    this->cmd = this->ComputeCmd();
     std::vector<float> actions;
     if (!this->meta_data->observations_history.empty())
     {
         this->history_obs_buf.insert(clamped_obs);
         this->history_obs = this->history_obs_buf.get_obs_vec(this->meta_data->observations_history);
-        actions = this->model->forward({this->history_obs});
+        actions = this->model->forward({this->history_obs, this->cmd});
     }
     else
     {
-        actions = this->model->forward({clamped_obs});
+        actions = this->model->forward({clamped_obs,this->cmd});
     }
 
     if (!this->meta_data->clip_actions_upper.empty() && !this->meta_data->clip_actions_lower.empty())

@@ -28,6 +28,17 @@ public:
 
     virtual void Start(void) { }; // this is for RT teleop
 
+    virtual std::vector<std::vector<float>> GetCmd(){
+
+        std::vector<std::vector<float>> cmd;
+        std::vector<float> empty(45,0.0);
+        for (int i=0;i<10;i++)
+        {
+            cmd.push_back(empty);
+        }
+        return cmd; 
+        }; // this is for RT teleop
+
     virtual void Update(float time) {};
 
     virtual void Reset(const std::vector<float> &robot_anchor_quat) = 0;
@@ -45,6 +56,7 @@ public:
     virtual std::vector<float> GetAnchorLinVelb() = 0;
 
     virtual std::vector<float> GetAnchorProjectedGravity() = 0;
+    
 
     virtual float GetDuration() {};
 

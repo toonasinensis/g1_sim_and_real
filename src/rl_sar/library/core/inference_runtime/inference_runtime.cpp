@@ -177,78 +177,89 @@ bool ONNXModel::load(const std::string& model_path)
     }
 }
 
-std::vector<float> ONNXModel::forward(const std::vector<std::vector<float>>& inputs)
+std::vector<float> ONNXModel::forward(
+    const std::vector<std::vector<float>>& inputs)
 {
+        auto t_start = std::chrono::high_resolution_clock::now();
     if (!loaded_)
-    {
         throw std::runtime_error("Model not loaded");
+
+     Ort::MemoryInfo memory_info =
+        Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+
+    const size_t num_inputs = input_node_names_.size();
+
+    if (inputs.size() != num_inputs)
+    {
+        throw std::runtime_error(
+            "Input count mismatch: expected " +
+            std::to_string(num_inputs) + ", got " +
+            std::to_string(inputs.size()));
     }
 
-#ifdef USE_ONNX
-    try
+    std::vector<Ort::Value> input_tensors;
+    input_tensors.reserve(num_inputs);
+
+    for (size_t i = 0; i < num_inputs; ++i)
     {
-        auto t_start = std::chrono::high_resolution_clock::now();
+        const auto& input_data = inputs[i];
+        const auto& shape = input_shapes_[i];
 
-        // Create memory info
-        Ort::MemoryInfo memory_info = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator, OrtMemTypeDefault);
+        size_t expected_size = 1;
+        for (auto d : shape) expected_size *= d;
 
-        // Get input (use first input only)
-        const auto& input = inputs[0];
-        auto input_shape = session_->GetInputTypeInfo(0).GetTensorTypeAndShapeInfo().GetShape();
+        if (input_data.size() != expected_size)
+        {
+            throw std::runtime_error(
+                "Input size mismatch for " + input_node_names_[i]);
+        }
 
-        // Create input tensor
-        auto input_tensor = Ort::Value::CreateTensor<float>(
-            memory_info,
-            const_cast<float*>(input.data()),
-            input.size(),
-            input_shape.data(),
-            input_shape.size()
-        );
+        input_tensors.emplace_back(
+            Ort::Value::CreateTensor<float>(
+                memory_info,
+                const_cast<float*>(input_data.data()),
+                input_data.size(),
+                shape.data(),
+                shape.size()));
+    }
 
-        // Prepare input/output names
-        const char* input_names[] = {input_node_names_[0].c_str()};
-        const char* output_names[] = {output_node_names_[0].c_str()};
+    // prepare names
+    std::vector<const char*> input_names;
+    for (auto& name : input_node_names_)
+        input_names.push_back(name.c_str());
 
-        // Execute inference
-        auto outputs = session_->Run(
-            Ort::RunOptions{nullptr},
-            input_names,
-            &input_tensor,
-            1,
-            output_names,
-            1
-        );
+    std::vector<const char*> output_names;
+    for (auto& name : output_node_names_)
+        output_names.push_back(name.c_str());
 
+    auto outputs = session_->Run(
+        Ort::RunOptions{nullptr},
+        input_names.data(),
+        input_tensors.data(),
+        input_tensors.size(),
+        output_names.data(),
+        output_names.size());
 
-        // --- 推理结束，计算耗时 ---
+    return extract_output_data(outputs);
+    // --- 推理结束，计算耗时 ---
         auto t_end = std::chrono::high_resolution_clock::now();
         auto duration_ms = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start).count();
         std::cout << LOGGER::INFO << "ONNX inference time: " << duration_ms << " us" << std::endl;
-
-        
-        // Extract output data
-        return extract_output_data(outputs);
-    }
-    catch (const std::exception& e)
-    {
-        std::cout << LOGGER::ERROR << "ONNX inference error: " << e.what() << std::endl;
-        throw;
-    }
-#else
-    throw std::runtime_error("ONNX support not compiled");
-#endif
 }
 
 #ifdef USE_ONNX
+
 void ONNXModel::setup_input_output_info()
 {
     // Get input node information
     size_t num_input_nodes = session_->GetInputCount();
     input_node_names_.reserve(num_input_nodes);
     input_shapes_.reserve(num_input_nodes);
+    std::cout << "[ONNX] Inputs:\n";
 
     for (size_t i = 0; i < num_input_nodes; ++i)
     {
+        
         // Get input name
         auto input_name = session_->GetInputNameAllocated(i, Ort::AllocatorWithDefaultOptions());
         input_node_names_.push_back(std::string(input_name.get()));
@@ -272,6 +283,17 @@ void ONNXModel::setup_input_output_info()
             }
         }
         input_shapes_.push_back(shape);
+
+         std::cout << "  [" << i << "] "
+              << input_node_names_[i] << " : [";
+        for (size_t j = 0; j < input_shapes_[i].size(); ++j)
+        {
+            std::cout << input_shapes_[i][j];
+            if (j + 1 < input_shapes_[i].size())
+                std::cout << ", ";
+        }
+        std::cout << "]\n";
+
     }
 
     // Get output node information

@@ -89,15 +89,15 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64")
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|AMD64")
 message(STATUS "Current system architecture: ${CMAKE_SYSTEM_PROCESSOR}")
     set(ARCH_DIR "x86_64")
-    set(ONNX_RUNTIME_DIR "libunitree_legged_sdk_amd64")
+    set(ONNX_RUNTIME_DIR "${INFERENCE_RUNTIME_DIR}/onnxruntime")
 else()
     message(FATAL_ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
 endif()
 
 
 # ONNX Runtime Setup
-set(ONNX_RUNTIME_LIB "")
-set(ONNX_RUNTIME_DIR "${INFERENCE_RUNTIME_DIR}/onnxruntime-linux-aarch64-1.23.2")
+# set(ONNX_RUNTIME_LIB "")
+# set(ONNX_RUNTIME_DIR "${INFERENCE_RUNTIME_DIR}/onnxruntime-linux-aarch64-1.23.2")
 
 # Detect Jetson platform
  

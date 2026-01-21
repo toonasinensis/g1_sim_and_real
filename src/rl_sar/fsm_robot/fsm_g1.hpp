@@ -263,7 +263,7 @@ public:
             std::this_thread::sleep_for(std::chrono::seconds(1));
 
                 /* code */
-            rl.motion_loader->Reset(fsm_state->imu.quaternion);
+            // rl.motion_loader->Reset(fsm_state->imu.quaternion);
 
             
             

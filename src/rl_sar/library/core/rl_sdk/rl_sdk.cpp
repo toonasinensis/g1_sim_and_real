@@ -62,106 +62,23 @@ void RL::StateController(const RobotState<float>* state, RobotCommand<float>* co
     }
 }
 
+std::vector<float> RL::ComputeCmd()
+{
+    std::vector<std::vector<float>> cmdlist;
+    cmdlist = this->motion_loader->GetCmd(); //hsitory?
+    std::vector<float> cmd;
+    for (const auto& cmd_vec : cmdlist)
+    {
+        cmd.insert(cmd.end(), cmd_vec.begin(), cmd_vec.end());
+    }
+    return cmd ;
+}
+
+
 std::vector<float> RL::ComputeObservation()
 {
     std::vector<std::vector<float>> obs_list;
-
-    // for (const std::string &observation : this->meta_data->observation_names)
-    // {
-    //     // ============= Base Observations =============
-    //     if (observation == "lin_vel")
-    //     {
-    //         obs_list.push_back(this->obs.lin_vel * this->meta_data->obs_scale);
-    //     }
-    //     else if (observation == "ang_vel")
-    //     {
-    //         // In ROS1 Gazebo, the coordinate system for angular velocity is in the world coordinate system.
-    //         // In ROS2 Gazebo, mujoco and real robot, the coordinate system for angular velocity is in the body coordinate system.
-    //         if (this->ang_vel_axis == "body")
-    //         {
-    //             obs_list.push_back(this->obs.ang_vel * this->meta_data->obs_scale);
-    //         }
-    //         else if (this->ang_vel_axis == "world")
-    //         {
-    //             obs_list.push_back(QuatRotateInverse(this->obs.base_quat, this->obs.ang_vel) * this->meta_data->obs_scale);
-    //         }
-    //     }
-    //     else if (observation == "gravity_vec")
-    //     {
-    //         obs_list.push_back(QuatRotateInverse(this->obs.base_quat, this->obs.gravity_vec));
-    //     }
-    //     else if (observation == "commands")
-    //     {
-    //         obs_list.push_back(this->obs.commands * this->meta_data->obs_scale);
-    //     }
-    //     else if (observation == "dof_pos")
-    //     {
-    //         std::vector<float> dof_pos_rel = this->obs.dof_pos - this->meta_data->default_joint_pos;
-    //         for (int i : this->params.Get<std::vector<int>>("wheel_indices"))
-    //         {
-    //             dof_pos_rel[i] = 0.0f;
-    //         }
-    //         obs_list.push_back(dof_pos_rel * this->meta_data->obs_scale);
-    //     }
-    //     else if (observation == "dof_vel")
-    //     {
-    //         obs_list.push_back(this->obs.dof_vel * this->meta_data->obs_scale);
-    //     }
-    //     else if (observation == "actions")
-    //     {
-    //         obs_list.push_back(this->obs.actions);
-    //     }
-    //     // ============= Other Observations =============
-    //     else if (observation == "whole_body_tracking/motion_command")
-    //     {
-    //         std::vector<float> motion_cmd;
-    //         if (this->motion_loader)
-    //         {
-    //             auto joint_pos_sdk = this->motion_loader->GetJointPos();
-    //             auto joint_vel_sdk = this->motion_loader->GetJointVel();
-    //             auto joint_mapping = this->params.Get<std::vector<int>>("joint_mapping");
-    //             std::vector<float> joint_pos_training(joint_mapping.size());
-    //             std::vector<float> joint_vel_training(joint_mapping.size());
-    //             for (size_t i = 0; i < joint_mapping.size(); ++i)
-    //             {
-    //                 joint_pos_training[i] = joint_pos_sdk[joint_mapping[i]];
-    //                 joint_vel_training[i] = joint_vel_sdk[joint_mapping[i]];
-    //             }
-    //             motion_cmd.insert(motion_cmd.end(), joint_pos_training.begin(), joint_pos_training.end());
-    //             motion_cmd.insert(motion_cmd.end(), joint_vel_training.begin(), joint_vel_training.end());
-    //         }
-    //         else
-    //         {
-    //             motion_cmd.resize(this->meta_data->num_joints * 2, 0.0f);
-    //         }
-    //         obs_list.push_back(motion_cmd);
-    //     }
-    //     else if (observation == "whole_body_tracking/motion_anchor_ori_b")
-    //     {
-    //         std::vector<float> anchor_ori(6, 0.0f);
-    //         if (this->motion_loader)
-    //         {
-    //             std::vector<float> robot_anchor_quat_w = this->obs.base_quat;
-    //             std::vector<float> ref_anchor_quat_w = this->motion_loader->GetAnchorQuat();
-    //             std::vector<float> init_quat = this->motion_loader->GetInitQuat();
-    //             std::vector<float> motion_anchor_quat_w = QuaternionMultiply(init_quat, ref_anchor_quat_w);
-    //             std::vector<float> robot_quat_inv = QuaternionConjugate(robot_anchor_quat_w);
-    //             std::vector<float> relative_quat = QuaternionMultiply(robot_quat_inv, motion_anchor_quat_w);
-    //             std::vector<float> rot_matrix = QuaternionToRotationMatrix(relative_quat);
-    //             anchor_ori = MatrixFirstTwoColumns(rot_matrix);
-    //         }
-    //         obs_list.push_back(anchor_ori);
-    //     }
-    //     else if (observation == "RoboMimic_Deploy/phase")
-    //     {
-    //         float motion_time = this->episode_length_buf * this->params.Get<float>("dt") * this->params.Get<int>("decimation");
-    //         float count = motion_time;
-    //         float phase = count / this->motion_length;
-    //         std::vector<float> phase_vec = {phase};
-    //         obs_list.push_back(phase_vec);
-    //     }
-    // }
-
+ 
     for (const std::string &observation : this->meta_data->observation_names)
     {
         // ============= Base Observations =============
@@ -239,6 +156,19 @@ std::vector<float> RL::ComputeObservation()
             }
             obs_list.push_back(anchor_ori);
         }
+
+        else if (observation == "body_anchor_ori_w")
+        {
+            std::vector<float> anchor_ori(6, 0.0f);
+            if (this->motion_loader)
+            {
+                std::vector<float> robot_anchor_quat_w = this->obs.base_quat;
+                std::vector<float> rot_matrix = QuaternionToRotationMatrix(robot_anchor_quat_w);
+                anchor_ori = MatrixFirstTwoColumns(rot_matrix);
+            }
+            obs_list.push_back(anchor_ori);
+        }
+
         else if (observation == "command_dummy")
         {
             obs_list.push_back({0.0, 0.0});
@@ -247,7 +177,6 @@ std::vector<float> RL::ComputeObservation()
             throw std::runtime_error("Unknow observation name: " + observation);
         }
     }
-
     this->obs_dims.clear();
     for (const auto& obs : obs_list)
     {
@@ -259,14 +188,6 @@ std::vector<float> RL::ComputeObservation()
     {
         obs.insert(obs.end(), obs_vec.begin(), obs_vec.end());
     }
-
-    // for (auto num : obs) {
-    //     std::cout << num << ", ";
-    // }
-    // std::cout << obs.size();
-    // std::cout << std::endl;
-    // std::cout << std::endl;
-    // std::cout << std::endl;
 
     std::vector<float> clamped_obs = clamp(obs, -this->meta_data->clip_obs, this->meta_data->clip_obs);
     return clamped_obs;
@@ -327,10 +248,7 @@ void RL::InitRL(std::string robot_config_path)
 {
     std::lock_guard<std::mutex> lock(this->model_mutex);
 
-    // this->ReadYaml(robot_config_path, "config.yaml");
-    // std::string model_path = std::string(POLICY_DIR) + "/" + robot_config_path + "/" + this->params.Get<std::string>("model_name");
-    // this->meta_data = std::make_shared<MetaData>(model_path);
-
+ 
     std::string model_path = this->InitParams(robot_config_path);
     // init joint num first
     this->InitJointNum(this->meta_data->num_joints);
