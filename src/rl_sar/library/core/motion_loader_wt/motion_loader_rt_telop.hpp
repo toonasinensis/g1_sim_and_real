@@ -26,7 +26,7 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
-// #define LOG_REF
+// #define LOG_REF_telop_telop
 #include "rate_stats.hpp"
 using asio::ip::udp;
 
@@ -41,7 +41,7 @@ using asio::ip::udp;
  * joint_0, joint_1, ..., joint_N
  */
 
-struct MocapCmd
+struct MocapCmd_telop
 {
     float frame_id; // 不能用64位的，会对齐
     float telop_pos[5*3];
@@ -66,7 +66,7 @@ public:
         
         socket_.set_option(asio::socket_base::reuse_address(true));
 
-        #ifdef LOG_REF
+        #ifdef LOG_REF_telop
  ///////////////////////////////////////////////////
         // 获取当前时间
         auto now = std::chrono::system_clock::now();
@@ -114,7 +114,7 @@ public:
         sleep(3);
     }
 
-    // MocapCmd cmd_saver;
+    // MocapCmd_telop cmd_saver;
 
     ~MotionLoaderRT_TELOP()
     {
@@ -126,11 +126,11 @@ public:
         logfile.close();
     }
 
-    std::pair<bool, MocapCmd> get_cmd(void)
+    std::pair<bool, MocapCmd_telop> get_cmd(void)
     {
         std::lock_guard<std::mutex> lock(cmd_mutex_);
         if (!has_data_)
-            return {false, MocapCmd{}};
+            return {false, MocapCmd_telop{}};
         return {true, cmd_};
         // return true;
     }
@@ -138,117 +138,57 @@ public:
     std::vector<float> GetJointPos()
     {
         auto [ok, cmd] = get_cmd();
-
-        if (ok)
-        {
-            std::vector<float> joint_pos_vec(cmd.joint_pos_ref, cmd.joint_pos_ref + 29);
-            return joint_pos_vec;
-        }
-        else
-        {
+ 
             std::cout <<"No motion data received yet, returning zero joint positions." << std::endl;
             return std::vector<float>(29, 0.0f);
-        }
-    };
+     };
 
     std::vector<float> GetAnchorPos()
     {
         auto [ok, cmd] = get_cmd();
-
-        if (ok)
-        {
-            std::vector<float> Anchor_pos_vec(cmd.anchor_pos, cmd.anchor_pos + 3);
-            return Anchor_pos_vec;
-        }
-        else
-        {
             std::cout <<"No motion data received yet, returning zero anchor positions." << std::endl;
             return std::vector<float>(3, 0.0f);
-        }
     };
 
     std::vector<float> GetJointVel()
     {
         auto [ok, cmd] = get_cmd();
 
-        if (ok)
-        {
-            std::vector<float> joint_vel_vec(cmd.joint_vel_ref, cmd.joint_vel_ref + 29);
-            return joint_vel_vec;
-        }
-        else
-        {
-            // std::cout <<"No motion data received yet, returning zero joint velocities." << std::endl;
-            return std::vector<float>(29, 0.0f);
-        }
+        // std::cout <<"No motion data received yet, returning zero joint velocities." << std::endl;
+        return std::vector<float>(29, 0.0f);
+        
     };
 
     std::vector<float> GetAnchorQuat() // 错
     {
         auto [ok, cmd] = get_cmd();
-
-        if (ok)
-        {
-            std::vector<float> anchor_quat_vec = {
-                cmd.anchor_quat[3], // w
-                cmd.anchor_quat[0], // x
-                cmd.anchor_quat[1], // y
-                cmd.anchor_quat[2]  // z
-            };
-            return anchor_quat_vec;
-        }
-        else
-        {
-            std::cout <<"No motion data received yet, returning default anchor quaternion." << std::endl;
-            return std::vector<float>{1.0f, 0.0f, 0.0f, 0.0f}; // 默认值 wxyz
-        }
+  
+        std::cout <<"No motion data received yet, returning default anchor quaternion." << std::endl;
+        return std::vector<float>{1.0f, 0.0f, 0.0f, 0.0f}; // 默认值 wxyz
+      
     };
 
     std::vector<float> GetAnchorZ()
     {
-        auto [ok, cmd] = get_cmd();
-
-        if (ok)
-        {
-            return std::vector<float>{cmd.anchor_pos_z[0]};
-        }
-        else
-        {
-            // std::cout <<"No motion data received yet, returning zero anchor Z position." << std::endl;
-            return std::vector<float>{0.0f};
-        }
+    
+        // std::cout <<"No motion data received yet, returning zero anchor Z position." << std::endl;
+        return std::vector<float>{0.0f};
+         
     };
 
     std::vector<float> GetAnchorLinVelb() 
     {
-        auto [ok, cmd] = get_cmd();
-
-        if (ok)
-        {
-            std::vector<float> anchor_lin_vel_vec(cmd.anchor_lin_vel, cmd.anchor_lin_vel + 3);
-            return anchor_lin_vel_vec;
-        }
-        else
-        {
-            // std::cout <<"No motion data received yet, returning zero anchor linear velocity." << std::endl;
-            return std::vector<float>(3, 0.0f);
-        }
+        // std::cout <<"No motion data received yet, returning zero anchor linear velocity." << std::endl;
+        return std::vector<float>(3, 0.0f);
+      
     };
 
     std::vector<float> GetAnchorProjectedGravity() // 错
     {
-        auto [ok, cmd] = get_cmd();
-
-        if (ok)
-        {
-            std::vector<float> anchor_proj_gravity_vec(cmd.achor_proj_gravity, cmd.achor_proj_gravity + 3);
-            return anchor_proj_gravity_vec;
-        }
-        else
-        {
-            // std::cout <<"No motion data received yet, returning default anchor projected gravity." << std::endl;
-            return std::vector<float>{0.0f, 0.0f, -1.0f}; // 默认值
-        }
+       
+        // std::cout <<"No motion data received yet, returning default anchor projected gravity." << std::endl;
+        return std::vector<float>{0.0f, 0.0f, -1.0f}; // 默认值
+  
     };
 
     std::vector<float> GetInitQuat() { return world_to_init_; }
@@ -276,40 +216,72 @@ public:
     }
 
     std::vector<std::vector<float>> GetCmd()
-    {
-        size_t out_size = (cmd_deque.size() + 4) / 5; // 计算最终多少帧被采样
-        std::vector<std::vector<float>> cmd_telop;
-        cmd_telop.reserve(out_size);
-        std::vector<float> telop_oldest_anchor_pos(3, 0.0f);
-        int anchor_idx = 0;
-
-        telop_oldest_anchor_pos[2] = cmd_deque[0].telop_pos[anchor_idx*3 + 2];
-
-        for (size_t i = 0; i < cmd_deque.size(); i += 5)
+    {   
+        if (cmd_deque.size()<50)
         {
-            const auto& cmd = cmd_deque[i];
-
-            // 直接创建目标 vector，并一次性 reserve 空间
-            std::vector<float> telop_input;
-            telop_input.reserve(5*3 + 5*6);
-
-            // 直接拷贝 pos
-             // 处理 pos：减掉 anchor_pos
-            for (size_t j = 0; j < 5; ++j)  // 5 个body
+            std::vector<std::vector<float>> cmd;
+            std::vector<float> telop_ori_mat6(5*6,0.0);
+            for (int i=0;i<10;i++)
             {
-                for (size_t k = 0; k < 3; ++k)  // xyz
-                {
-                    telop_input.push_back(cmd.telop_pos[j*3 + k] - telop_oldest_anchor_pos[k]);
-                }
+               std::vector<float> telop_pos = {
+                0.0000e+00,  0.0000e+00,  7.8757e-01,
+                -5.6503e-02,  1.3559e-01,  4.0192e-02,
+                -7.7982e-02, -1.2193e-01,  4.3716e-02,
+                1.0713e-01,  4.8282e-01,  1.1304e+00,
+                2.8709e-02, -4.8430e-01,  1.1262e+00
+                };
+
+                std::vector<float> empty;
+                empty.reserve(telop_pos.size() + telop_ori_mat6.size());
+
+                // 拼接 pos 和 ori_mat6
+                empty.insert(empty.end(), telop_pos.begin(), telop_pos.end());
+                empty.insert(empty.end(), telop_ori_mat6.begin(), telop_ori_mat6.end());
+
+                cmd.push_back(empty);
             }
-            
-            // 直接拷贝 rot_mat6
-            telop_input.insert(telop_input.end(), cmd.telop_ori_mat6, cmd.telop_ori_mat6 + 5*6);
-
-            cmd_telop.push_back(std::move(telop_input));
+            std::cout<<"数据没满,先发 Tpose"<<std::endl;
+            return cmd; 
         }
+        else
+        {
+        
+            size_t out_size = (cmd_deque.size() + 4) / 5; // 计算最终多少帧被采样
+            std::vector<std::vector<float>> cmd_telop;
+            cmd_telop.reserve(out_size);
+            std::vector<float> telop_oldest_anchor_pos(3, 0.0f);
+            int anchor_idx = 0;
 
-        return cmd_telop;
+            telop_oldest_anchor_pos[2] = cmd_deque[0].telop_pos[anchor_idx*3 + 2];
+
+            for (size_t i = 0; i < cmd_deque.size(); i += 5)
+            {
+                const auto& cmd = cmd_deque[i];
+
+                // 直接创建目标 vector，并一次性 reserve 空间
+                std::vector<float> telop_input;
+                telop_input.reserve(5*3 + 5*6);
+
+                // 直接拷贝 pos
+                // 处理 pos：减掉 anchor_pos
+                for (size_t j = 0; j < 5; ++j)  // 5 个body
+                {
+                    for (size_t k = 0; k < 3; ++k)  // xyz
+                    {
+                        telop_input.push_back(cmd.telop_pos[j*3 + k] - telop_oldest_anchor_pos[k]);
+                    }
+                }
+                
+                // 直接拷贝 rot_mat6
+                telop_input.insert(telop_input.end(), cmd.telop_ori_mat6, cmd.telop_ori_mat6 + 5*6);
+
+                cmd_telop.push_back(std::move(telop_input));
+            }
+
+         return cmd_telop;
+        }
+        
+       
     }
 
  
@@ -345,14 +317,14 @@ private:
             udp::endpoint sender;
             size_t len = socket_.receive_from(asio::buffer(recv_buf_), sender);
             // std::cout << "Received " << len << " bytes from " << sender.address().to_string() << std::endl;
-            // std::cout<<(sizeof(MocapCmd));
-            if (len != sizeof(MocapCmd))
+            // std::cout<<(sizeof(MocapCmd_telop));
+            if (len != sizeof(MocapCmd_telop))
             {
-                std::cout << "接受的size不对: " << len << "需要" << (sizeof(MocapCmd)) << std::endl;
+                std::cout << "接受的size不对: " << len << "需要" << (sizeof(MocapCmd_telop)) << std::endl;
                 continue;
             }
             std::lock_guard<std::mutex> lock(cmd_mutex_);
-            std::memcpy(&cmd_, recv_buf_.data(), sizeof(MocapCmd));
+            std::memcpy(&cmd_, recv_buf_.data(), sizeof(MocapCmd_telop));
             // printf("收到帧id: %u\n", cmd_.frame_id);
 
             // 固定长度
@@ -363,7 +335,7 @@ private:
 
             has_data_.store(true, std::memory_order_release);   
             
-            #ifdef LOG_REF
+            #ifdef LOG_REF_telop
             
              auto now = std::chrono::system_clock::now();
             uint64_t current_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -401,8 +373,8 @@ private:
     std::thread recv_thread_;
     std::atomic<bool> running_;
 
-    MocapCmd cmd_;
-    std::deque<MocapCmd> cmd_deque;
+    MocapCmd_telop cmd_;
+    std::deque<MocapCmd_telop> cmd_deque;
     std::mutex cmd_mutex_;
     float init_frame_id = 0; // 不能用64位的，会对齐
     RateStats recv_stats{"udp_recv", 100, 1};

@@ -31,12 +31,29 @@ public:
     virtual std::vector<std::vector<float>> GetCmd(){
 
         std::vector<std::vector<float>> cmd;
-        std::vector<float> empty(45,0.0);
+        std::vector<float> telop_ori_mat6(5*6,0.0);
         for (int i=0;i<10;i++)
         {
+            std::vector<float> telop_pos = {
+            0.0000e+00,  0.0000e+00,  7.8757e-01,
+            -5.6503e-02,  1.3559e-01,  4.0192e-02,
+            -7.7982e-02, -1.2193e-01,  4.3716e-02,
+            1.0713e-01,  4.8282e-01,  1.1304e+00,
+            2.8709e-02, -4.8430e-01,  1.1262e+00
+            };
+
+            std::vector<float> empty;
+            empty.reserve(telop_pos.size() + telop_ori_mat6.size());
+
+            // 拼接 pos 和 ori_mat6
+            empty.insert(empty.end(), telop_pos.begin(), telop_pos.end());
+            empty.insert(empty.end(), telop_ori_mat6.begin(), telop_ori_mat6.end());
+
             cmd.push_back(empty);
         }
+        std::cout<<"数据没满,先发 Tpose"<<std::endl;
         return cmd; 
+
         }; // this is for RT teleop
 
     virtual void Update(float time) {};
@@ -58,7 +75,7 @@ public:
     virtual std::vector<float> GetAnchorProjectedGravity() = 0;
     
 
-    virtual float GetDuration() {};
+    virtual float GetDuration() {return 0; };
 
     virtual std::vector<float> GetInitQuat() = 0;
 

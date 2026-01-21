@@ -10,6 +10,7 @@
 #include "rl_sdk.hpp"
 #include "motion_loader_rt.hpp"
 #include "motion_loader.hpp"
+#include "motion_loader_rt_telop.hpp"
 namespace g1_fsm
 {
 
@@ -254,7 +255,7 @@ public:
             std::string motion_file_path = std::string(POLICY_DIR) + "/" + robot_config_path + "/" + rl.params.Get<std::string>("motion_file");
             float fps = 1.0f / (rl.meta_data->dt * rl.meta_data->decimation);
             
-            rl.motion_loader = std::make_unique<MotionLoaderRT>(9999);
+            rl.motion_loader = std::make_unique<MotionLoaderRT_TELOP>(9999);
             // rl.motion_length = rl.motion_loader->GetDuration();
             rl.motion_loader->Start(); 
             // while (!has_data_.load(std::memory_order_acquire)) {
