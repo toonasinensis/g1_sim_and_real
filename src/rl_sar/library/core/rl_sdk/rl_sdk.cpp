@@ -163,7 +163,16 @@ std::vector<float> RL::ComputeObservation()
             if (this->motion_loader)
             {
                 std::vector<float> robot_anchor_quat_w = this->obs.base_quat;
-                std::vector<float> rot_matrix = QuaternionToRotationMatrix(robot_anchor_quat_w);
+                if ((this->init_yaw_quat.empty()))
+                {
+                std::cout<<"init yaw!!!!"<<std::endl;
+                std::vector<float> robot_anchor_yaw_inv = QuaternionConjugate(QuaternionYawOnly(this->obs.base_quat));
+                // this->init_yaw_mat_inv = TransposeMatrix3x3(QuaternionToRotationMatrix(robot_anchor_yaw)) ;
+                std::vector<float> init_telop_quat = this->motion_loader->GetInitQuat();
+                std::vector<float> init_telop_quat_yaw = QuaternionYawOnly(init_telop_quat);
+                this->init_yaw_quat = QuaternionMultiply(init_telop_quat_yaw, robot_anchor_yaw_inv);
+                }
+                std::vector<float> rot_matrix = QuaternionToRotationMatrix(QuaternionMultiply(this->init_yaw_quat, robot_anchor_quat_w));
                 anchor_ori = MatrixFirstTwoColumns(rot_matrix);
             }
             obs_list.push_back(anchor_ori);
@@ -257,6 +266,7 @@ void RL::InitRL(std::string robot_config_path)
     this->InitObservations();
     this->InitOutputs();
     this->InitControl();
+    this->init_yaw_quat.clear();
 
     // init obs history
     const auto& observations_history = this->meta_data->observations_history;  // avoid dangling reference
@@ -265,7 +275,6 @@ void RL::InitRL(std::string robot_config_path)
         int history_length = *std::max_element(observations_history.begin(), observations_history.end()) + 1;
         this->history_obs_buf = ObservationBuffer(1, this->obs_dims, history_length, this->meta_data->observations_history_priority);
     }
-
     // init model
     this->model = InferenceRuntime::ModelFactory::load_model(model_path);
     if (!this->model)

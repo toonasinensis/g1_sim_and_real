@@ -195,6 +195,7 @@ public:
     std::shared_ptr<MetaData> meta_data;
     Observations<float> obs;
     std::vector<int> obs_dims;
+    std::vector<float> init_yaw_quat;
 
     RobotState<float> robot_state;
     RobotCommand<float> robot_command;

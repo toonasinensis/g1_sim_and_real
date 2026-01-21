@@ -12,7 +12,7 @@ namespace backward{
 }
 RL_Real::RL_Real(int argc, char **argv)
 {
-  
+
 
     // read params from yaml
     this->ang_vel_axis = "body";
@@ -174,22 +174,21 @@ void RL_Real::GetState(RobotState<float> *state)
 
 void RL_Real::SetCommand(const RobotCommand<float> *command)
 {
-    LowCmd_ dds_low_command;
-    dds_low_command.mode_pr() = static_cast<uint8_t>(this->mode_pr);
-    dds_low_command.mode_machine() = this->mode_machine;
+    this->unitree_low_command.mode_pr() = static_cast<uint8_t>(this->mode_pr);
+    this->unitree_low_command.mode_machine() = this->mode_machine;
 
     for (int i = 0; i < this->meta_data->num_joints; ++i)
     {
-        dds_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].mode() = 1; // 1:Enable, 0:Disable
-        dds_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].q() = command->motor_command.q[i];
-        dds_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].dq() = command->motor_command.dq[i];
-        dds_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].kp() = command->motor_command.kp[i];
-        dds_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].kd() = command->motor_command.kd[i];
-        dds_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].tau() = command->motor_command.tau[i];
+        this->unitree_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].mode() = 1; // 1:Enable, 0:Disable
+        this->unitree_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].q() = command->motor_command.q[i];
+        this->unitree_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].dq() = command->motor_command.dq[i];
+        this->unitree_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].kp() = command->motor_command.kp[i];
+        this->unitree_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].kd() = command->motor_command.kd[i];
+        this->unitree_low_command.motor_cmd()[this->meta_data->joint_mapping[i]].tau() = command->motor_command.tau[i];
     }
 
-    dds_low_command.crc() = Crc32Core((uint32_t *)&dds_low_command, (sizeof(LowCmd_) >> 2) - 1);
-    lowcmd_publisher->Write(dds_low_command);
+    this->unitree_low_command.crc() = Crc32Core((uint32_t *)&unitree_low_command, (sizeof(LowCmd_) >> 2) - 1);
+    lowcmd_publisher->Write(unitree_low_command);
 }
 
 void RL_Real::RobotControl()
@@ -234,11 +233,10 @@ void RL_Real::RunModel()
         // this->TorqueProtect(this->output_dof_tau);
         // this->AttitudeProtect(this->robot_state.imu.quaternion, 75.0f, 75.0f);
 
-// #ifdef CSV_LOGGER
-//         std::vector<float> tau_est = this->robot_state.motor_state.tau_est;
-//         this->CSVLogger(this->output_dof_tau, tau_est, this->obs.dof_pos, this->output_dof_pos, this->obs.dof_vel,\
-//         this->ref_anchor_pos, this->ref_anchor_wxyz, this->ref_anchor_joint_pos, this->ref_anchor_joint_vel);
-// #endif
+#ifdef CSV_LOGGER
+        std::vector<float> tau_est = this->robot_state.motor_state.tau_est;
+        this->CSVLogger(this->output_dof_tau, tau_est, this->obs.dof_pos, this->output_dof_pos, this->obs.dof_vel);
+#endif
     }
 }
 
@@ -254,17 +252,17 @@ std::vector<float> RL_Real::Forward()
     }
 
     std::vector<float> clamped_obs = this->ComputeObservation();
-    this->cmd = this->ComputeCmd();
+
     std::vector<float> actions;
     if (!this->meta_data->observations_history.empty())
     {
         this->history_obs_buf.insert(clamped_obs);
         this->history_obs = this->history_obs_buf.get_obs_vec(this->meta_data->observations_history);
-        actions = this->model->forward({this->history_obs, this->cmd});
+        actions = this->model->forward({this->history_obs});
     }
     else
     {
-        actions = this->model->forward({clamped_obs,this->cmd});
+        actions = this->model->forward({clamped_obs});
     }
 
     if (!this->meta_data->clip_actions_upper.empty() && !this->meta_data->clip_actions_lower.empty())
@@ -343,7 +341,7 @@ void RL_Real::InitLowCmd()
         this->unitree_low_command.motor_cmd()[i].kd() = (0);
         this->unitree_low_command.motor_cmd()[i].tau() = (0);
     }
-} 
+}
 
 void RL_Real::LowStateHandler(const void *message)
 {
@@ -357,8 +355,8 @@ void RL_Real::ImuTorsoHandler(const void *message)
     this->unitree_imu_torso = *(const IMUState_ *)message;
     // std::cout<<"IMU torso quaternion: "<<this->unitree_imu_torso.quaternion()[0]<<" ";
 }
- 
- 
+
+
 
 int main(int argc, char **argv)
 {
@@ -367,7 +365,7 @@ int main(int argc, char **argv)
         std::cout << LOGGER::ERROR << "Usage: " << argv[0] << " networkInterface" << std::endl;
         throw std::runtime_error("Invalid arguments");
     }
-    ChannelFactory::Instance()->Init(1, argv[1]); // channel 本地 
+    ChannelFactory::Instance()->Init(1, "lo"); // channel 本地 
 
     RL_Real rl_sar(argc, argv);
     while (1) { sleep(10); }

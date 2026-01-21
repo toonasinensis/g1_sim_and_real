@@ -30,6 +30,9 @@
 #include "rate_stats.hpp"
 using asio::ip::udp;
 
+
+
+
 /**
  * @brief Motion data loader for mimic/dance tasks
  *
@@ -191,7 +194,20 @@ public:
   
     };
 
-    std::vector<float> GetInitQuat() { return world_to_init_; }
+    std::vector<float> GetInitQuat() { 
+        
+        std::vector<float> anchor_ori_mat6(6,0.0);
+        for(int i=0;i<6;i++)
+        {
+            anchor_ori_mat6[i] = cmd_.telop_ori_mat6[i];
+        }
+        std::vector<float> Anchor_rot_m9 = recoverRotationFrom6(anchor_ori_mat6);
+        std::vector<float> anchor_init_quat = QuaternionFromMat9(Anchor_rot_m9);
+        return anchor_init_quat;
+       
+       
+
+     }
 
     // void Update(void)
     // {
@@ -252,7 +268,8 @@ public:
             std::vector<float> telop_oldest_anchor_pos(3, 0.0f);
             int anchor_idx = 0;
 
-            telop_oldest_anchor_pos[2] = cmd_deque[0].telop_pos[anchor_idx*3 + 2];
+            telop_oldest_anchor_pos[0] = cmd_deque[0].telop_pos[anchor_idx*3 + 0];//x
+            telop_oldest_anchor_pos[1] = cmd_deque[0].telop_pos[anchor_idx*3 + 1];//y
 
             for (size_t i = 0; i < cmd_deque.size(); i += 5)
             {
@@ -271,12 +288,14 @@ public:
                         telop_input.push_back(cmd.telop_pos[j*3 + k] - telop_oldest_anchor_pos[k]);
                     }
                 }
-                
+                // v.assign(data, data + 5 * 6);
+                // float ori[5*6] ={0};
                 // 直接拷贝 rot_mat6
                 telop_input.insert(telop_input.end(), cmd.telop_ori_mat6, cmd.telop_ori_mat6 + 5*6);
 
                 cmd_telop.push_back(std::move(telop_input));
             }
+        //  std::cout<<("cmd_telop", cmd_telop[0])<<std::endl;
 
          return cmd_telop;
         }

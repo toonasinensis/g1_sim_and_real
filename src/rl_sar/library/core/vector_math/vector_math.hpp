@@ -623,4 +623,112 @@ inline std::vector<float> MatrixFirstTwoColumns(const std::vector<float>& mat)
     };
 }
 
+
+#include <vector>
+#include <cmath>
+#include <algorithm>
+
+/**
+ * @brief Convert 3x3 rotation matrix (column-major) to quaternion [w, x, y, z]
+ * @param R 3x3 rotation matrix, column-major (length=9)
+ * @return quaternion [w, x, y, z]
+ */
+inline std::vector<float> QuaternionFromMat9(const std::vector<float>& R)
+{
+    if (R.size() != 9) throw std::runtime_error("Rotation matrix must have 9 elements");
+
+    float trace = R[0] + R[4] + R[8]; // r00 + r11 + r22
+    float qw, qx, qy, qz;
+
+    if (trace > 0.0f) {
+        float S = std::sqrt(trace + 1.0f) * 2.0f; // S = 4*qw
+        qw = 0.25f * S;
+        qx = (R[7] - R[5]) / S; // r21 - r12
+        qy = (R[2] - R[6]) / S; // r02 - r20
+        qz = (R[3] - R[1]) / S; // r10 - r01
+    }
+    else if ((R[0] > R[4]) && (R[0] > R[8])) { // r00 largest
+        float S = std::sqrt(1.0f + R[0] - R[4] - R[8]) * 2.0f; // S = 4*qx
+        qw = (R[7] - R[5]) / S; // r21 - r12
+        qx = 0.25f * S;
+        qy = (R[1] + R[3]) / S; // r01 + r10
+        qz = (R[2] + R[6]) / S; // r02 + r20
+    }
+    else if (R[4] > R[8]) { // r11 largest
+        float S = std::sqrt(1.0f + R[4] - R[0] - R[8]) * 2.0f; // S = 4*qy
+        qw = (R[2] - R[6]) / S; // r02 - r20
+        qx = (R[1] + R[3]) / S; // r01 + r10
+        qy = 0.25f * S;
+        qz = (R[5] + R[7]) / S; // r12 + r21
+    }
+    else { // r22 largest
+        float S = std::sqrt(1.0f + R[8] - R[0] - R[4]) * 2.0f; // S = 4*qz
+        qw = (R[3] - R[1]) / S; // r10 - r01
+        qx = (R[2] + R[6]) / S; // r02 + r20
+        qy = (R[5] + R[7]) / S; // r12 + r21
+        qz = 0.25f * S;
+    }
+
+    return {qw, qx, qy, qz};
+}
+
+
+// -------------------- 工具函数 --------------------
+
+// 向量归一化
+inline void normalize(std::vector<float>& v) {
+    float norm = std::sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
+    if (norm > 1e-8f) {
+        v[0] /= norm;
+        v[1] /= norm;
+        v[2] /= norm;
+    }
+}
+
+// 向量叉乘
+inline std::vector<float> cross(const std::vector<float>& a, const std::vector<float>& b) {
+    return std::vector<float>{
+        a[1]*b[2] - a[2]*b[1],
+        a[2]*b[0] - a[0]*b[2],
+        a[0]*b[1] - a[1]*b[0]
+    };
+}
+
+// 点积
+inline float dot(const std::vector<float>& a, const std::vector<float>& b) {
+    return a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
+}
+
+
+inline std::vector<float> recoverRotationFrom6(const std::vector<float>& r6) {
+    if (r6.size() < 6) 
+        throw std::runtime_error("Input vector r6 must have at least 6 elements.");
+
+    // 前两列
+    std::vector<float> col0 = {r6[0], r6[1], r6[2]};
+    std::vector<float> col1 = {r6[3], r6[4], r6[5]};
+
+    // 单位化 col0
+    normalize(col0);
+
+    // Gram-Schmidt 正交化 col1
+    float proj = dot(col0, col1);
+    col1[0] -= proj * col0[0];
+    col1[1] -= proj * col0[1];
+    col1[2] -= proj * col0[2];
+    normalize(col1);
+
+    // col2 = col0 x col1
+    std::vector<float> col2 = cross(col0, col1);
+
+    // 拼成 3x3 矩阵，按列优先
+    std::vector<float> R(9);
+    R[0] = col0[0]; R[1] = col0[1]; R[2] = col0[2];
+    R[3] = col1[0]; R[4] = col1[1]; R[5] = col1[2];
+    R[6] = col2[0]; R[7] = col2[1]; R[8] = col2[2];
+
+    return R;
+}
+
+
 #endif // VECTOR_MATH_HPP
