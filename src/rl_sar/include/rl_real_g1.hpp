@@ -19,6 +19,9 @@
 #include <unitree/robot/channel/channel_publisher.hpp>
 #include <unitree/robot/channel/channel_subscriber.hpp>
 #include <unitree/idl/hg/IMUState_.hpp>
+#include <unitree/idl/hg/HandCmd_.hpp>
+#include <unitree/idl/hg/HandState_.hpp>
+
 #include <unitree/idl/hg/LowCmd_.hpp>
 #include <unitree/idl/hg/LowState_.hpp>
 #include <unitree/robot/b2/motion_switcher/motion_switcher_client.hpp>
@@ -244,8 +247,17 @@ private:
     void InitLowCmd();
     uint32_t Crc32Core(uint32_t *ptr, uint32_t len);
     void LowStateHandler(const void *message);
+    void LhandStateHandler(const void *message);
+    void RhandStateHandler(const void *message);
     void ImuTorsoHandler(const void *message);
+    
     unitree::robot::b2::MotionSwitcherClient msc;
+    HandCmd_ Dex3LhandCmd;
+    HandState_ Dex3LhandState;
+
+    HandCmd_ Dex3RhandCmd;
+    HandState_ Dex3RhandState;
+
     LowCmd_ unitree_low_command;
     LowState_ unitree_low_state;
     IMUState_ unitree_imu_torso;
@@ -257,9 +269,19 @@ private:
     ChannelSubscriberPtr<LowState_> lowstate_subscriber;
     ChannelSubscriberPtr<IMUState_> imutorso_subscriber;
 
+
+    ChannelSubscriberPtr<HandState_> Lhandstates_subscriber;
+    ChannelSubscriberPtr<HandCmd_> Lhandcmd_publisher;
+    ChannelSubscriberPtr<HandState_> Rhandstates_subscriber;
+    ChannelSubscriberPtr<HandCmd_> Rhandcmd_publisher;
+
     // others
     std::vector<float> mapped_joint_positions;
     std::vector<float> mapped_joint_velocities;
+
+    int MOTOR_MAX = 7;
+    int SENSOR_MAX = 9;
+    uint8_t hand_id = 0;
 
 #if defined(USE_ROS1) && defined(USE_ROS)
     geometry_msgs::Twist cmd_vel;

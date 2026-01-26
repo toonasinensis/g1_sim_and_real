@@ -30,18 +30,24 @@ public:
 
     virtual std::vector<std::vector<float>> GetCmd(){
 
-        std::vector<std::vector<float>> cmd;
-        std::vector<float> telop_ori_mat6(5*6,0.0);
+       std::vector<std::vector<float>> cmd;
         for (int i=0;i<10;i++)
         {
             std::vector<float> telop_pos = {
-            0.0000e+00,  0.0000e+00,  7.8757e-01,
-            -5.6503e-02,  1.3559e-01,  4.0192e-02,
-            -7.7982e-02, -1.2193e-01,  4.3716e-02,
-            1.0713e-01,  4.8282e-01,  1.1304e+00,
-            2.8709e-02, -4.8430e-01,  1.1262e+00
+                0.0000,  0.0000,  0.7,
+            -2.3246e-06,  1.1851e-01, -5.6864e-02,
+            -2.3246e-06,  1.1851e-01, -5.6864e-02,
+            1.9977e-01,  1.4866e-01,  7.9523e-01,
+            1.9977e-01,  -1.4866e-01,  7.9523e-01
             };
-
+            
+            std::vector<float> telop_ori_mat6 = {
+                1,0,0,1,0,0,
+            1,0,0,1,0,0,
+            1,0,0,1,0,0,
+            1.0000e+00,  1.9159e-04,-1.9159e-04,  1.0000e+00,-5.4950e-05,  5.9957e-05 ,
+            1., -1.9159e-04, 1.9159e-04,  1.0000e+00,-5.4938e-05,  5.9967e-05
+            };
             std::vector<float> empty;
             empty.reserve(telop_pos.size() + telop_ori_mat6.size());
 

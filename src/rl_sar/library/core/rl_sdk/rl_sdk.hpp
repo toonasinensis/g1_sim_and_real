@@ -196,6 +196,7 @@ public:
     Observations<float> obs;
     std::vector<int> obs_dims;
     std::vector<float> init_yaw_quat;
+    std::vector<float> init_teleop_yaw_quat;
 
     RobotState<float> robot_state;
     RobotCommand<float> robot_command;

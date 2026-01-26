@@ -5,11 +5,11 @@
 
 #include "rl_real_g1.hpp"
 
-#define BACKWARD_HAS_DW 1
-#include "backward.hpp"
-namespace backward{
-    backward::SignalHandling sh;
-}
+// #define BACKWARD_HAS_DW 1
+// #include "backward.hpp"
+// namespace backward{
+//     backward::SignalHandling sh;
+// }
 RL_Real::RL_Real(int argc, char **argv)
 {
   
@@ -67,6 +67,31 @@ RL_Real::RL_Real(int argc, char **argv)
     // create imutorso subscriber
     this->imutorso_subscriber.reset(new ChannelSubscriber<IMUState_>(HG_IMU_TORSO));
     this->imutorso_subscriber->InitChannel(std::bind(&RL_Real::ImuTorsoHandler, this, std::placeholders::_1), 1);
+
+    // this->Lhandcmd_publisher.reset(new unitree::robot::ChannelPublisher<unitree_hg::msg::dds_::HandCmd_>("rt/dex3/left/cmd"));
+    // this->Rhandcmd_publisher.reset(new unitree::robot::ChannelPublisher<unitree_hg::msg::dds_::HandCmd_>("rt/dex3/right/cmd"));
+
+    // this->Lhandcmd_publisher->InitChannel();
+    // this->Rhandcmd_publisher->InitChannel();
+
+    // this->Lhandstates_subscriber.reset(new unitree::robot::ChannelSubscriber<unitree_hg::msg::dds_::HandState_>("rt/dex3/left/state"));
+    // this->Rhandstates_subscriber.reset(new unitree::robot::ChannelSubscriber<unitree_hg::msg::dds_::HandState_>("rt/dex3/right/state"));
+
+    // this->Rhandstates_subscriber->InitChannel(
+    //   std::bind(&RL_Real::RhandStateHandler, this, std::placeholders::_1), 1);
+
+    // this->Lhandstates_subscriber->InitChannel(
+    //   std::bind(&RL_Real::LhandStateHandler, this, std::placeholders::_1), 1);
+
+    
+    // this->Dex3LhandState.motor_state().resize(MOTOR_MAX);
+    // this->Dex3RhandState.motor_state().resize(MOTOR_MAX);
+
+    // this->Dex3LhandState.press_sensor_state().resize(SENSOR_MAX);
+    // this->Dex3RhandState.press_sensor_state().resize(SENSOR_MAX);
+    
+    // this->Dex3LhandCmd.motor_cmd().resize(MOTOR_MAX);
+    // this->Dex3RhandCmd.motor_cmd().resize(MOTOR_MAX);   
 
     // loop
     this->loop_keyboard = std::make_shared<LoopFunc>("loop_keyboard", 0.05, std::bind(&RL_Real::KeyboardInterface, this));
@@ -352,6 +377,18 @@ void RL_Real::LowStateHandler(const void *message)
 
 }
 
+void RL_Real::LhandStateHandler(const void *message)
+{
+    this->Dex3LhandState = *(const HandState_ *)message;
+    // std::cout<<unitree_low_state.motor_state().at(0).q();
+
+}
+void RL_Real::RhandStateHandler(const void *message)
+{
+    this->Dex3RhandState = *(const HandState_ *)message;
+    // std::cout<<unitree_low_state.motor_state().at(0).q();
+
+}
 void RL_Real::ImuTorsoHandler(const void *message)
 {
     this->unitree_imu_torso = *(const IMUState_ *)message;
@@ -367,7 +404,7 @@ int main(int argc, char **argv)
         std::cout << LOGGER::ERROR << "Usage: " << argv[0] << " networkInterface" << std::endl;
         throw std::runtime_error("Invalid arguments");
     }
-    ChannelFactory::Instance()->Init(1, argv[1]); // channel 本地 
+    ChannelFactory::Instance()->Init(0, argv[1]); // channel 本地 
 
     RL_Real rl_sar(argc, argv);
     while (1) { sleep(10); }

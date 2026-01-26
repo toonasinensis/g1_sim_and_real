@@ -166,13 +166,16 @@ std::vector<float> RL::ComputeObservation()
                 if ((this->init_yaw_quat.empty()))
                 {
                 std::cout<<"init yaw!!!!"<<std::endl;
-                std::vector<float> robot_anchor_yaw_inv = QuaternionConjugate(QuaternionYawOnly(this->obs.base_quat));
+                // std::vector<float> robot_anchor_yaw_inv = QuaternionConjugate(QuaternionYawOnly(this->obs.base_quat));
                 // this->init_yaw_mat_inv = TransposeMatrix3x3(QuaternionToRotationMatrix(robot_anchor_yaw)) ;
-                std::vector<float> init_telop_quat = this->motion_loader->GetInitQuat();
-                std::vector<float> init_telop_quat_yaw = QuaternionYawOnly(init_telop_quat);
-                this->init_yaw_quat = QuaternionMultiply(init_telop_quat_yaw, robot_anchor_yaw_inv);
+                // std::vector<float> init_telop_quat = this->motion_loader->GetInitQuat();
+                // std::vector<float> init_telop_quat_yaw = QuaternionYawOnly(init_telop_quat);
+                this->init_yaw_quat = QuaternionYawOnly(robot_anchor_quat_w);
+                this->init_teleop_yaw_quat = QuaternionYawOnly(this->motion_loader->GetInitQuat());
                 }
-                std::vector<float> rot_matrix = QuaternionToRotationMatrix(QuaternionMultiply(this->init_yaw_quat, robot_anchor_quat_w));
+                // std::vector<float> rot_matrix = QuaternionToRotationMatrix(QuaternionMultiply(this->init_yaw_quat, robot_anchor_quat_w));
+                std::vector<float> rot_matrix = QuaternionToRotationMatrix(QuaternionMultiply(QuaternionMultiply(this->motion_loader->GetInitQuat(), QuaternionConjugate(this->init_teleop_yaw_quat)), this->init_yaw_quat));
+                
                 anchor_ori = MatrixFirstTwoColumns(rot_matrix);
             }
             obs_list.push_back(anchor_ori);
