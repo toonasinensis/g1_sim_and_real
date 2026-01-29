@@ -89,18 +89,59 @@ if(CMAKE_SYSTEM_PROCESSOR MATCHES "aarch64|arm64|ARM64")
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|AMD64")
 message(STATUS "Current system architecture: ${CMAKE_SYSTEM_PROCESSOR}")
     set(ARCH_DIR "x86_64")
-    set(ONNX_RUNTIME_DIR "libunitree_legged_sdk_amd64")
+    set(ONNX_RUNTIME_DIR "${INFERENCE_RUNTIME_DIR}/onnxruntime")
 else()
     message(FATAL_ERROR "Unsupported architecture: ${CMAKE_SYSTEM_PROCESSOR}")
 endif()
 
 
 # ONNX Runtime Setup
-set(ONNX_RUNTIME_LIB "")
-set(ONNX_RUNTIME_DIR "${INFERENCE_RUNTIME_DIR}/onnxruntime-linux-aarch64-1.23.2")
+# set(ONNX_RUNTIME_LIB "")
+# set(ONNX_RUNTIME_DIR "${INFERENCE_RUNTIME_DIR}/onnxruntime-linux-aarch64-1.23.2")
 
 # Detect Jetson platform
- 
+# set(USE_TRT "ON")
+
+ if (USE_TRT)
+    add_compile_definitions(USE_ONNX)
+
+    find_package(CUDA REQUIRED)
+    if(NOT CUDA_FOUND)
+        message(FATAL_ERROR "CUDA not found!")
+    endif()
+
+
+    set(CUDA_TOOLKIT_ROOT_DIR "/usr/local/cuda-11.4")  # 替换为 CUDA 11.4 的实际路径
+    find_package(OpenCV REQUIRED)
+
+    # 找到CUDA 库
+    # find_package(CUDA REQUIRED)
+    set(CUDA_ROOT /usr/local/cuda)
+    include_directories(${CUDA_ROOT}/include/)
+    link_directories(${CUDA_ROOT}/lib64)
+    # tensorRT
+    # find_package(TensorRT REQUIRED)
+    include_directories(/usr/include/aarch64-linux-gnu)
+    link_directories(/usr/lib/aarch64-linux-gnu)
+
+
+    # -----------------------------
+    # TensorRT 路径（根据你本机安装调整）
+    # 假设 Orin 上 TensorRT 安装在 /usr/local/TensorRT
+    # -----------------------------
+    set(TENSORRT_DIR "/usr/local/TensorRT")  # <-- 修改为你实际路径
+    include_directories(
+        ${TENSORRT_DIR}/include
+        ${CUDA_INCLUDE_DIRS}
+    
+    )
+    link_directories(
+        ${TENSORRT_DIR}/lib
+    )
+
+
+
+endif()
 
 
 if(EXISTS "${ONNX_RUNTIME_DIR}/include" AND EXISTS "${ONNX_RUNTIME_DIR}/lib")# AND NOT IS_JETSON)
@@ -306,6 +347,29 @@ if(USE_ONNX)
     target_link_libraries(inference_runtime PUBLIC ${ONNX_RUNTIME_LIB})
     target_compile_definitions(inference_runtime PRIVATE USE_ONNX)
 endif()
+
+if(USE_TRT)
+    target_link_libraries(inference_runtime PUBLIC 
+                     -lpthread 
+                      -lm 
+                      -lrt 
+                      -ldl 
+                      -lstdc++
+                        nvinfer
+                        nvonnxparser
+                        ${CUDA_LIBRARIES}
+                      nvinfer
+                      nvonnxparser
+                      cuda
+                      cudart
+                      nvinfer 
+                      nvonnxparser 
+                      nvparsers 
+                      nvinfer_plugin
+                      )
+    target_compile_definitions(inference_runtime PRIVATE USE_TRT)
+endif()
+
 if(NOT USE_CMAKE)
     if($ENV{ROS_DISTRO} MATCHES "foxy|humble")
         install(TARGETS inference_runtime DESTINATION lib/${PROJECT_NAME})
