@@ -356,6 +356,10 @@ Create a service file
 
 ```bash
 sudo touch /etc/systemd/system/rl_sar.service
+
+
+
+/usr/src/tensorrt/bin/
 ```
 
 Write the following content, assuming the rl_sar project is in the `~/rl_sar` directory

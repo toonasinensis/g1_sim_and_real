@@ -12,7 +12,9 @@
 #include <filesystem>
 #include <algorithm>
 #include "logger.hpp"
- 
+#include <fstream>
+#include <chrono>
+
 #ifdef USE_ONNX
 #include <onnxruntime_cxx_api.h>
 #endif
@@ -125,10 +127,6 @@ private:
 #endif
 };
 
-
-
-
-
 /**
  * @brief Model factory class
  *
@@ -171,13 +169,7 @@ public:
     static std::unique_ptr<Model> load_model(const std::string& model_path, ModelType type = ModelType::AUTO);
 };
 
-
-
-
-
-
 ///////////////////////trt////////////////////////////
-
 
 
 class TRTModel :public Model{
@@ -198,7 +190,7 @@ public:
     std::vector<int> buffer_size;
     int num_bindings;
     #endif
-    TRTModel( ) {}
+    TRTModel() {}
 
     bool load(const std::string& model_file )override {
         #ifdef USE_TRT
@@ -222,7 +214,10 @@ public:
         else if (model_type == "trt") {
             // 加载 TensorRT Engine 不需要编译比较快
             this->trt_file = model_file;
+            std::cout<<"his->load_engine(this->trt_file, this->logger)"<<std::endl;
             this->engine = this->load_engine(this->trt_file, this->logger);
+            std::cout<<"his->load_engine(this->trt_file, this->logger) finish"<<std::endl;
+
         }
         if (!this->engine) {
             std::cerr << "Failed to create TensorRT engine." << std::endl;
@@ -233,11 +228,6 @@ public:
         // 分配 GPU 内存并绑定输入
         for (int i = 0; i < this->num_bindings; ++i) { //遍历IO口 并创建IO空间
             Dims dims = this->engine->getBindingDimensions(i);
-            if (dims.d[j] < 0) {
-                std::cerr << "Dynamic shape not supported yet\n";
-                return false;
-            }
-
             int size = 1;
             for (int j = 0; j < dims.nbDims; ++j) {
                 size *= dims.d[j];
@@ -272,7 +262,9 @@ public:
     // 运行推理 多入单出
     std::vector<float> forward(const std::vector<std::vector<float>>& inputs) { 
         #ifdef USE_TRT
-       
+        auto t0 = std::chrono::high_resolution_clock::now();
+
+        // std::cout<<"inputs"<<(inputs.size())<<"abc"<<inputs[0].size()<<std::endl;
         for (int i = 0; i < num_bindings - 1; ++i) { // 复制输入数据
             cudaMemcpy(this->gpu_buffers[i], inputs[i].data(), this->buffer_size[i] * sizeof(float), cudaMemcpyHostToDevice);
         }
@@ -280,7 +272,14 @@ public:
         context->executeV2(this->gpu_buffers.data());
         // 获取输出数据
         cudaMemcpy(this->outputs.data(), this->gpu_buffers[num_bindings - 1], this->outputs.size() * sizeof(float), cudaMemcpyDeviceToHost);
-        return this->outputs;        
+        auto t1 = std::chrono::high_resolution_clock::now();
+
+        double ms = std::chrono::duration<double, std::milli>(t1 - t0).count();
+        std::cout << "[TRT] Inference time: " << ms << " ms" << std::endl;
+
+        return this->outputs;
+         
+        
         #endif
     }
         #ifdef USE_TRT
