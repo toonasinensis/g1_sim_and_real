@@ -32,7 +32,6 @@ MUJOCO_LOG.TXT
 
 # Data
 .cache
-*.json
 
 # temp
 *.zip
@@ -40,7 +39,6 @@ MUJOCO_LOG.TXT
 *.tar.gz
 temp_extract*/
 *.npz
-*.json
 *.onnx
 # robot descriptions
 rl_sar_zoo
