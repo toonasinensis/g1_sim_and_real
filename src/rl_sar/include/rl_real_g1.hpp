@@ -27,6 +27,7 @@
 #include <memory>
 #include <mutex>
 #include <shared_mutex>
+#include "g1_dex3_fz.hpp"
 
 #if defined(USE_ROS1) && defined(USE_ROS)
 #include <ros/ros.h>
@@ -221,6 +222,9 @@ public:
 #endif
 
 private:
+
+    std::shared_ptr<Dex3HandController>  pLhand;
+    std::shared_ptr<Dex3HandController>  pRhand;
     // rl functions
     std::vector<float> Forward() override;
     void GetState(RobotState<float> *state) override;

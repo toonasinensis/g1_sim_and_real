@@ -68,6 +68,7 @@ RL_Real::RL_Real(int argc, char **argv)
     this->imutorso_subscriber.reset(new ChannelSubscriber<IMUState_>(HG_IMU_TORSO));
     this->imutorso_subscriber->InitChannel(std::bind(&RL_Real::ImuTorsoHandler, this, std::placeholders::_1), 1);
 
+
     // loop
     this->loop_keyboard = std::make_shared<LoopFunc>("loop_keyboard", 0.05, std::bind(&RL_Real::KeyboardInterface, this));
     this->loop_control = std::make_shared<LoopFunc>("loop_control", this->meta_data->dt, std::bind(&RL_Real::RobotControl, this));
@@ -75,6 +76,14 @@ RL_Real::RL_Real(int argc, char **argv)
     this->loop_keyboard->start();
     this->loop_control->start();
     this->loop_rl->start();
+
+    pRhand = std::make_shared<Dex3HandController>(false, argv[1]);
+    pLhand = std::make_shared<Dex3HandController>(true, argv[1]);
+    pRhand->start();
+    pLhand->start();
+
+    pLhand->setMode(State::RELEASE);
+    pRhand->setMode(State::RELEASE);
 
 #ifdef PLOT
     this->plot_t = std::vector<int>(this->plot_size, 0);
@@ -121,7 +130,22 @@ void RL_Real::GetState(RobotState<float> *state)
     if (this->gamepad.B.pressed) this->control.SetGamepad(Input::Gamepad::B);
     if (this->gamepad.X.pressed) this->control.SetGamepad(Input::Gamepad::X);
     if (this->gamepad.Y.pressed) this->control.SetGamepad(Input::Gamepad::Y);
-    if (this->gamepad.R1.pressed) this->control.SetGamepad(Input::Gamepad::RB);
+    if (this->gamepad.R1.pressed)
+     {
+        std::cout<<"R1"<<std::endl;
+
+        this->control.SetGamepad(Input::Gamepad::RB);
+        pRhand->setMode(State::RELEASE);
+    
+    }
+    if (this->gamepad.R2.pressed)
+    {
+         
+        std::cout<<"R2"<<std::endl;
+        pRhand->setMode(State::HOLD);
+    
+    }
+
     if (this->gamepad.L1.pressed) this->control.SetGamepad(Input::Gamepad::LB);
     if (this->gamepad.F1.pressed) this->control.SetGamepad(Input::Gamepad::LStick);
     if (this->gamepad.F2.pressed) this->control.SetGamepad(Input::Gamepad::RStick);
