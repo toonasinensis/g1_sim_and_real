@@ -244,8 +244,7 @@ std::vector<float> RL::ComputeObservation()
             std::vector<float> anchor_ori(6, 0.0f);
             if (this->motion_loader)
             {
-                std::vector<float> ref_anchor_xyzw =  this->motion_loader->GetAnchorQuat();
-
+ 
               
 
                 std::vector<float> robot_anchor_quat_w = this->obs.base_quat;
@@ -254,7 +253,7 @@ std::vector<float> RL::ComputeObservation()
                 // std::vector<float> motion_anchor_quat_w = QuaternionMultiply(init_quat, ref_anchor_quat_w);
                 // std::vector<float> robot_quat_inv = QuaternionConjugate(robot_anchor_quat_w);
                 // std::vector<float> relative_quat = QuaternionMultiply(robot_quat_inv, motion_anchor_quat_w);
-                std::vector<float> rot_matrix = QuaternionToRotationMatrix(ref_anchor_xyzw);
+                std::vector<float> rot_matrix = QuaternionToRotationMatrix(robot_anchor_quat_w);
                 anchor_ori = MatrixFirstTwoColumns(rot_matrix);
             }
             obs_list.push_back(anchor_ori);
@@ -265,16 +264,12 @@ std::vector<float> RL::ComputeObservation()
             if (this->motion_loader)
             {
                 std::vector<float> ref_anchor_xyzw =  this->motion_loader->GetAnchorQuat();
-
-              
-
-                std::vector<float> robot_anchor_quat_w = this->obs.base_quat;
                 std::vector<float> ref_anchor_quat_w = this->motion_loader->GetAnchorQuat();
                 std::vector<float> init_quat = this->motion_loader->GetInitQuat();
                 std::vector<float> motion_anchor_quat_w = QuaternionMultiply(init_quat, ref_anchor_quat_w);
                 // std::vector<float> robot_quat_inv = QuaternionConjugate(robot_anchor_quat_w);
                 // std::vector<float> relative_quat = QuaternionMultiply(robot_quat_inv, motion_anchor_quat_w);
-                std::vector<float> rot_matrix = QuaternionToRotationMatrix(motion_anchor_quat_w);
+                std::vector<float> rot_matrix = QuaternionToRotationMatrix(ref_anchor_xyzw);
                 anchor_ori = MatrixFirstTwoColumns(rot_matrix);
             }
             obs_list.push_back(anchor_ori);
