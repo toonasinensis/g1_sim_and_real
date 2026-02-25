@@ -1,6 +1,13 @@
  
 Install the required packages:
 
+#推理：
+现在支持onnx推理和trt推理
+这里面有个onnx_to_trt的脚本，转化的时候一定要在orin上搞,要先conda deactivate，因为这个环境是默认的环境。
+建议推理的前要运行一下这些测试脚本。
+运行就把yaml里的路径改下。
+
+
 ```bash
 # Ubuntu
 sudo apt install cmake g++ build-essential libyaml-cpp-dev libeigen3-dev libboost-all-dev libspdlog-dev libfmt-dev libtbb-dev liblcm-dev
@@ -11,7 +18,7 @@ sudo apt install cmake g++ build-essential libyaml-cpp-dev libeigen3-dev libboos
 ./build.sh -m  # or ./build.sh --cmake
 编译出来的可执行文件在cmake_build/bin里面
 ```
-  
+
  
  
 ### Simulation
